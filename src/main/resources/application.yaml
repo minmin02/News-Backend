@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: news
+  profiles:
+    active: ${SPRING_PROFILE:local}
+
+server:
+  port: 8080
+
+cloudflare:
+  r2:
+    access-key: ${R2_ACCESS_KEY}
+    secret-key: ${R2_SECRET_KEY}
+    bucket: ${R2_BUCKET}
+    endpoint: ${R2_ENDPOINT}
