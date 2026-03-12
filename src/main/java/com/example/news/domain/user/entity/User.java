@@ -1,28 +1,28 @@
-package com.example.news.test;
+package com.example.news.domain.user.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-// 테스트 엔티티
+
 @Entity
 @Table(name = "users")
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long userId;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true, nullable = false)
     private String email;
 
     @Column(nullable = false)
     private String password;
-
-    @Column(nullable = false)
-    private String nickname;
-
 
 }

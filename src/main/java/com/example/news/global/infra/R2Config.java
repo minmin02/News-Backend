@@ -1,4 +1,4 @@
-package com.example.news.global;
+package com.example.news.global.infra;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -22,6 +22,7 @@ public class R2Config {
     @Value("${cloudflare.r2.endpoint}")
     private String endpoint;
 
+    //d
     @Bean
     public S3Client r2Client() {
         return S3Client.builder()
@@ -32,4 +33,5 @@ public class R2Config {
                 .region(Region.of("auto"))
                 .build();
     }
+
 }
