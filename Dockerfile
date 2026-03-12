@@ -1,4 +1,3 @@
-# 1단계: 빌드 (JDK 17 사용)
 FROM eclipse-temurin:17-jdk-alpine AS builder
 
 WORKDIR /app
