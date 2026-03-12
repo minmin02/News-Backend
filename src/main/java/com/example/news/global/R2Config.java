@@ -32,4 +32,5 @@ public class R2Config {
                 .region(Region.of("auto"))
                 .build();
     }
+
 }
