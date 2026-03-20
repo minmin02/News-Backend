@@ -6,7 +6,7 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     show-sql: false
   data:
     redis:
@@ -24,6 +24,10 @@ cloudflare:
     secret-key: ${R2_SECRET_KEY}
     bucket: ${R2_BUCKET}
     endpoint: ${R2_ENDPOINT}
+
+youtube:
+  api:
+    key: ${YOUTUBE_API_KEY}
 
 server:
   port: 8080

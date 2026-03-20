@@ -42,3 +42,4 @@ out/
 application-prod.yml
 application-secret*.yml
 
+CLAUDE.md

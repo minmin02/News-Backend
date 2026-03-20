@@ -42,7 +42,10 @@ public class SecurityConfig {
             "/api/v1/users/test-login", "/api/v1/users/refresh",
             "/api/v1/auth/**",
             "/api/v1/enums/**", "/api/v1/home/**", "/ws-chat",
-            "/api/v1/files/upload"
+            "/api/v1/files/upload",
+            "/api/v1/youtube/recommendations",
+            "/api/v1/youtube/*/comments",
+            "/api/v1/issues/popular-videos"
     );
 
     private static final List<String> JWT_EXCLUDE_PATHS = EXCLUDE_PATHS.stream()
