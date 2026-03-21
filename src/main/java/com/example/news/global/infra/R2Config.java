@@ -3,6 +3,7 @@ package com.example.news.global.infra;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -22,7 +23,7 @@ public class R2Config {
     @Value("${cloudflare.r2.endpoint}")
     private String endpoint;
 
-    //d
+    @Lazy
     @Bean
     public S3Client r2Client() {
         return S3Client.builder()
