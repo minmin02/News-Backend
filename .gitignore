@@ -39,7 +39,15 @@ out/
 # 환경변수
 .env
 *.env
+application-local.yml
 application-prod.yml
 application-secret*.yml
+
+# macOS
+.DS_Store
+
+# 로그
+*.log
+logs/
 
 CLAUDE.md

@@ -18,9 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -107,38 +104,9 @@ public class YoutubeSearchService {
 
     // 영상 단건 저장
     YoutubeVideo saveVideo(Video video) {
-        VideoSnippet snippet = video.getSnippet();
-        VideoContentDetails contentDetails = video.getContentDetails();
-        VideoStatistics statistics = video.getStatistics();
-
         String videoId = video.getId();
-        return youtubeVideoRepository.findByYoutubeVideoId(videoId).orElseGet(() -> {
-            YoutubeVideo entity = YoutubeVideo.builder()
-                    .youtubeVideoId(videoId)
-                    .originalUrl("https://www.youtube.com/watch?v=" + videoId)
-                    .channelId(snippet.getChannelId())
-                    .channelName(snippet.getChannelTitle())
-                    .title(snippet.getTitle())
-                    .description(snippet.getDescription())
-                    .thumbnailUrl(extractThumbnailUrl(snippet))
-                    .publishedAt(parseDateTime(snippet.getPublishedAt()))
-                    .collectedAt(LocalDateTime.now())
-                    .defaultLanguageCode(snippet.getDefaultLanguage() != null
-                            ? snippet.getDefaultLanguage()
-                            : snippet.getDefaultAudioLanguage())
-                    .durationSeconds(contentDetails != null
-                            ? parseDuration(contentDetails.getDuration()) : null)
-                    .isEmbeddable(contentDetails != null
-                            ? contentDetails.getLicensedContent() : null)
-                    .viewCount(statistics != null && statistics.getViewCount() != null
-                            ? statistics.getViewCount().longValue() : null)
-                    .likeCount(statistics != null && statistics.getLikeCount() != null
-                            ? statistics.getLikeCount().longValue() : null)
-                    .commentCount(statistics != null && statistics.getCommentCount() != null
-                            ? statistics.getCommentCount().longValue() : null)
-                    .build();
-            return youtubeVideoRepository.save(entity);
-        });
+        return youtubeVideoRepository.findByYoutubeVideoId(videoId)
+                .orElseGet(() -> youtubeVideoRepository.save(YoutubeConverter.toYoutubeVideoEntity(video)));
     }
 
     // 영상-키워드 연결 중복 없이 저장
@@ -164,28 +132,4 @@ public class YoutubeSearchService {
         }
     }
 
-    // 썸네일 url 추출
-    private String extractThumbnailUrl(VideoSnippet snippet) {
-        if (snippet.getThumbnails() == null) return null;
-        if (snippet.getThumbnails().getHigh() != null) return snippet.getThumbnails().getHigh().getUrl();
-        if (snippet.getThumbnails().getMedium() != null) return snippet.getThumbnails().getMedium().getUrl();
-        if (snippet.getThumbnails().getDefault() != null) return snippet.getThumbnails().getDefault().getUrl();
-        return null;
-    }
-
-    // 날짜 파싱
-    private LocalDateTime parseDateTime(com.google.api.client.util.DateTime dateTime) {
-        if (dateTime == null) return null;
-        return ZonedDateTime.parse(dateTime.toStringRfc3339()).toLocalDateTime();
-    }
-
-    // 영상 길이 파싱
-    private Integer parseDuration(String isoDuration) {
-        if (isoDuration == null) return null;
-        try {
-            return (int) Duration.parse(isoDuration).getSeconds();
-        } catch (Exception e) {
-            return null;
-        }
-    }
 }

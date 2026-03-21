@@ -16,8 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -68,7 +66,7 @@ public class YoutubeCommentService {
             List<YoutubeComment> saved = response.getItems().stream()
                     .filter(thread -> !youtubeCommentRepository
                             .existsByExternalCommentId(thread.getId()))
-                    .map(thread -> buildComment(thread, video))
+                    .map(thread -> YoutubeConverter.toCommentEntity(thread, video))
                     .map(youtubeCommentRepository::save)
                     .collect(Collectors.toList());
 
@@ -81,25 +79,4 @@ public class YoutubeCommentService {
         }
     }
 
-    // 댓글 엔티티 생성
-    private YoutubeComment buildComment(CommentThread thread, YoutubeVideo video) {
-        Comment topComment = thread.getSnippet().getTopLevelComment();
-        CommentSnippet snippet = topComment.getSnippet();
-
-        return YoutubeComment.builder()
-                .youtubeVideo(video)
-                .externalCommentId(thread.getId())
-                .authorName(snippet.getAuthorDisplayName())
-                .content(snippet.getTextDisplay())
-                .likeCount(snippet.getLikeCount())
-                .publishedAt(parseDateTime(snippet.getPublishedAt()))
-                .isTopComment(true)
-                .build();
-    }
-
-    // 날짜 파싱
-    private LocalDateTime parseDateTime(com.google.api.client.util.DateTime dateTime) {
-        if (dateTime == null) return null;
-        return ZonedDateTime.parse(dateTime.toStringRfc3339()).toLocalDateTime();
-    }
 }

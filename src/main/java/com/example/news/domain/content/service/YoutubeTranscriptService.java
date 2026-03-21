@@ -59,12 +59,7 @@ public class YoutubeTranscriptService {
             String text = fetchDirectTimedText(youtubeVideoId, lang);
             if (text != null) {
                 YoutubeTranscript transcript = youtubeTranscriptRepository.save(
-                        YoutubeTranscript.builder()
-                                .youtubeVideo(video)
-                                .transcriptText(text)
-                                .transcriptSource(TranscriptSource.YOUTUBE_CAPTION)
-                                .languageCode(lang)
-                                .build()
+                        YoutubeConverter.toTranscriptEntity(video, text, TranscriptSource.YOUTUBE_CAPTION, lang)
                 );
                 return YoutubeConverter.toTranscriptDto(transcript);
             }
@@ -91,12 +86,7 @@ public class YoutubeTranscriptService {
         }
 
         YoutubeTranscript transcript = youtubeTranscriptRepository.save(
-                YoutubeTranscript.builder()
-                        .youtubeVideo(video)
-                        .transcriptText(transcriptText)
-                        .transcriptSource(TranscriptSource.YOUTUBE_CAPTION)
-                        .languageCode(track.languageCode)
-                        .build()
+                YoutubeConverter.toTranscriptEntity(video, transcriptText, TranscriptSource.YOUTUBE_CAPTION, track.languageCode)
         );
         return YoutubeConverter.toTranscriptDto(transcript);
     }

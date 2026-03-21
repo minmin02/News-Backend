@@ -7,12 +7,16 @@ import com.example.news.domain.content.entity.YoutubeComment;
 import com.example.news.domain.content.entity.YoutubeTranscript;
 import com.example.news.domain.content.entity.YoutubeVideo;
 import com.example.news.domain.content.enums.TranscriptSource;
+import com.google.api.services.youtube.model.*;
+import com.google.api.client.util.DateTime;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 public class YoutubeConverter {
     // 엔티티에서 DTO 변환 정적 메서드 모음.
-    // (인스턴스화 불필요한 유틸 클래스)
+    // 커멘트 반영
 
     public static YoutubeVideoDto.VideoCard toVideoCard(YoutubeVideo video) {
         return YoutubeVideoDto.VideoCard.builder()
@@ -73,5 +77,83 @@ public class YoutubeConverter {
                 .youtubeVideoId(youtubeVideoId)
                 .isAvailable(false)
                 .build();
+    }
+
+    public static YoutubeTranscript toTranscriptEntity(YoutubeVideo video, String text, TranscriptSource source, String languageCode) {
+        return YoutubeTranscript.builder()
+                .youtubeVideo(video)
+                .transcriptText(text)
+                .transcriptSource(source)
+                .languageCode(languageCode)
+                .build();
+    }
+
+    public static YoutubeVideo toYoutubeVideoEntity(Video video) {
+        VideoSnippet snippet = video.getSnippet();
+        VideoContentDetails contentDetails = video.getContentDetails();
+        VideoStatistics statistics = video.getStatistics();
+        String videoId = video.getId();
+
+        return YoutubeVideo.builder()
+                .youtubeVideoId(videoId)
+                .originalUrl("https://www.youtube.com/watch?v=" + videoId)
+                .channelId(snippet.getChannelId())
+                .channelName(snippet.getChannelTitle())
+                .title(snippet.getTitle())
+                .description(snippet.getDescription())
+                .thumbnailUrl(extractThumbnailUrl(snippet))
+                .publishedAt(parseDateTime(snippet.getPublishedAt()))
+                .collectedAt(LocalDateTime.now())
+                .defaultLanguageCode(snippet.getDefaultLanguage() != null
+                        ? snippet.getDefaultLanguage()
+                        : snippet.getDefaultAudioLanguage())
+                .durationSeconds(contentDetails != null
+                        ? parseDuration(contentDetails.getDuration()) : null)
+                .isEmbeddable(contentDetails != null
+                        ? contentDetails.getLicensedContent() : null)
+                .viewCount(statistics != null && statistics.getViewCount() != null
+                        ? statistics.getViewCount().longValue() : null)
+                .likeCount(statistics != null && statistics.getLikeCount() != null
+                        ? statistics.getLikeCount().longValue() : null)
+                .commentCount(statistics != null && statistics.getCommentCount() != null
+                        ? statistics.getCommentCount().longValue() : null)
+                .build();
+    }
+
+    private static String extractThumbnailUrl(VideoSnippet snippet) {
+        if (snippet.getThumbnails() == null) return null;
+        if (snippet.getThumbnails().getHigh() != null) return snippet.getThumbnails().getHigh().getUrl();
+        if (snippet.getThumbnails().getMedium() != null) return snippet.getThumbnails().getMedium().getUrl();
+        if (snippet.getThumbnails().getDefault() != null) return snippet.getThumbnails().getDefault().getUrl();
+        return null;
+    }
+
+    public static YoutubeComment toCommentEntity(CommentThread thread, YoutubeVideo video) {
+        Comment topComment = thread.getSnippet().getTopLevelComment();
+        CommentSnippet snippet = topComment.getSnippet();
+
+        return YoutubeComment.builder()
+                .youtubeVideo(video)
+                .externalCommentId(thread.getId())
+                .authorName(snippet.getAuthorDisplayName())
+                .content(snippet.getTextDisplay())
+                .likeCount(snippet.getLikeCount())
+                .publishedAt(parseDateTime(snippet.getPublishedAt()))
+                .isTopComment(true)
+                .build();
+    }
+
+    private static LocalDateTime parseDateTime(DateTime dateTime) {
+        if (dateTime == null) return null;
+        return ZonedDateTime.parse(dateTime.toStringRfc3339()).toLocalDateTime();
+    }
+
+    private static Integer parseDuration(String isoDuration) {
+        if (isoDuration == null) return null;
+        try {
+            return (int) Duration.parse(isoDuration).getSeconds();
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
