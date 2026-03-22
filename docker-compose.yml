@@ -2,6 +2,8 @@ version: '3.8'
 
 services:
   app:
+    profiles: ["prod"]
+    platform: linux/arm64
     build:
       context: .
       dockerfile: Dockerfile
