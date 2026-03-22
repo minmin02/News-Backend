@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import org.springframework.lang.Nullable;
 
-import java.math.BigDecimal;
+import java.util.List;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record BiasAnalysisResultDto(
@@ -18,5 +18,8 @@ public record BiasAnalysisResultDto(
         String summaryText,
         String perspectiveSummary,
         String evidenceSummary,
-        String toneLabel
+        String toneLabel,
+        @Nullable List<KeywordResultDto> keywords,
+        @Nullable List<SentenceLabelResultDto> sentenceLabels,
+        @Nullable List<EvidenceResultDto> evidences
 ) {}

@@ -14,9 +14,9 @@
 
 ## B 담당
 
-- [ ] service/ — Python FastAPI POST /analyze 호출 구현
-- [ ] Python 분석 결과 수신 및 BiasAnalysisResult DB 저장
-- [ ] JobStatus RUNNING → SUCCESS / FAILED 전이 완성
+- [x] service/ — Python FastAPI POST /analyze 호출 구현
+- [x] Python 분석 결과 수신 및 BiasAnalysisResult DB 저장
+- [x] JobStatus RUNNING → SUCCESS / FAILED 전이 완성
 
 ## C 담당
 

@@ -40,5 +40,5 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .userId(user.getUserId())
                 .roles(List.of("ROLE_USER"))
                 .build();
-    }
+    }   
 }
