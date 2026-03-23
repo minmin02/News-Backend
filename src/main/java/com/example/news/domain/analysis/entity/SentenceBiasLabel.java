@@ -1,11 +1,10 @@
 package com.example.news.domain.analysis.entity;
 
 import com.example.news.domain.analysis.enums.SentenceLabelType;
+import com.example.news.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "sentence_bias_label")
@@ -13,7 +12,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class SentenceBiasLabel {
+public class SentenceBiasLabel extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,6 +36,4 @@ public class SentenceBiasLabel {
 
     private String evidenceKeyword;
 
-    @CreationTimestamp
-    private LocalDateTime createdAt;
 }

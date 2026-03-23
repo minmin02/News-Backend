@@ -59,4 +59,5 @@ public class AnalysisJob extends BaseEntity {
         this.status = JobStatus.FAILED;
         this.errorMessage = errorMessage;
     }
+
 }
