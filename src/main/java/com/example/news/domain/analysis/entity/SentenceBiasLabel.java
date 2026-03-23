@@ -23,9 +23,12 @@ public class SentenceBiasLabel extends BaseEntity {
     @JoinColumn(name = "CONTENT_SENTENCE_ID")
     private ContentSentence contentSentence;
 
+
+    // 분석 실행 이력
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "BIAS_ANALYSIS_RESULT_ID")
-    private BiasAnalysisResult biasAnalysisResult;
+    @JoinColumn(name = "ANALYSIS_JOB_ID")
+    private AnalysisJob analysisJob;
+
 
     @Enumerated(EnumType.STRING)
     private SentenceLabelType labelType;

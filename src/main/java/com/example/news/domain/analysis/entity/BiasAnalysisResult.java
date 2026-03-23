@@ -51,4 +51,5 @@ public class BiasAnalysisResult extends BaseEntity {
     private String evidenceSummary;
 
     private String toneLabel;
+
 }
