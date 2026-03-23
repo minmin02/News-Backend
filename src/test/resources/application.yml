@@ -28,3 +28,6 @@ cloudflare:
     secret-key: test-secret-key
     endpoint: https://test.r2.cloudflarestorage.com
     bucket: test-bucket
+
+python:
+  base-url: http://localhost:8000

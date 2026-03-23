@@ -54,4 +54,9 @@ public class AnalysisJob extends BaseEntity {
     public void updateStatus(JobStatus newStatus) {
         this.status = newStatus;
     }
+
+    public void markFailed(String errorMessage) {
+        this.status = JobStatus.FAILED;
+        this.errorMessage = errorMessage;
+    }
 }

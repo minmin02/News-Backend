@@ -1,20 +1,32 @@
 package com.example.news.domain.analysis.service;
 
+import com.example.news.domain.analysis.dto.AnalyzeRequestDto;
 import com.example.news.domain.analysis.dto.BiasAnalysisResultDto;
 import com.example.news.domain.analysis.dto.ContentPreparedEventDto;
 import com.example.news.domain.analysis.dto.SentenceInputDto;
 import com.example.news.domain.analysis.entity.AnalysisJob;
+import com.example.news.domain.analysis.entity.BiasAnalysisKeyword;
+import com.example.news.domain.analysis.entity.BiasAnalysisResult;
+import com.example.news.domain.analysis.entity.BiasEvidence;
+import com.example.news.domain.analysis.entity.SentenceBiasLabel;
+import com.example.news.domain.analysis.enums.BiasKeywordType;
+import com.example.news.domain.analysis.enums.EvidenceType;
 import com.example.news.domain.analysis.enums.JobStatus;
 import com.example.news.domain.analysis.enums.JobType;
+import com.example.news.domain.analysis.enums.SentenceLabelType;
 import com.example.news.domain.analysis.enums.TargetType;
-import com.example.news.domain.analysis.exception.AnalysisException;
-import com.example.news.domain.analysis.exception.code.AnalysisErrorCode;
 import com.example.news.domain.analysis.repository.AnalysisJobRepository;
+import com.example.news.domain.analysis.repository.BiasAnalysisKeywordRepository;
+import com.example.news.domain.analysis.repository.BiasAnalysisResultRepository;
+import com.example.news.domain.analysis.repository.BiasEvidenceRepository;
 import com.example.news.domain.analysis.repository.ContentSentenceRepository;
+import com.example.news.domain.analysis.repository.SentenceBiasLabelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
 
@@ -25,18 +37,25 @@ public class AnalysisService {
 
     private final AnalysisJobRepository analysisJobRepository;
     private final ContentSentenceRepository contentSentenceRepository;
+    private final BiasAnalysisResultRepository biasAnalysisResultRepository;
+    private final BiasAnalysisKeywordRepository biasAnalysisKeywordRepository;
+    private final SentenceBiasLabelRepository sentenceBiasLabelRepository;
+    private final BiasEvidenceRepository biasEvidenceRepository;
+    private final WebClient webClient;
+
+    @Value("${python.base-url}")
+    private String pythonBaseUrl;
 
     /**
      * Content BC로부터 받은 이벤트를 기반으로 분석 작업을 생성하고 실행한다.
      *
      * 1. AnalysisJob을 PENDING 상태로 DB에 저장
-     * 2. Python FastAPI POST /analyze 호출하여 편향 분석 실행 (TODO - B 담당)
-     * 3. 분석 결과를 BiasAnalysisResult로 저장 (TODO - B 담당)
-     * 4. 실패 시 AnalysisJob 상태를 FAILED로 전이하고 예외를 던진다
+     * 2. Python FastAPI POST /analyze 호출하여 편향 분석 실행
+     * 3. 분석 결과를 BiasAnalysisResult로 저장
+     * 4. 실패 시 AnalysisJob 상태를 FAILED로 전이하고 로그만 남긴다
      *
      * @param event Content BC에서 전달받은 영상 및 문장 정보
      * @return 생성된 AnalysisJob
-     * @throws AnalysisException Python 분석 호출 실패 또는 저장 실패 시
      */
     @Transactional
     public AnalysisJob createAnalysisJob(ContentPreparedEventDto event) {
@@ -49,12 +68,91 @@ public class AnalysisService {
         job = analysisJobRepository.save(job);
 
         try {
-            // TODO(B): POST /analyze 호출 후 BiasAnalysisResult 저장
-            BiasAnalysisResultDto result = null;
+            // 1. RUNNING 전이
+            job.updateStatus(JobStatus.RUNNING);
+
+            // 2. Python FastAPI 호출
+            List<SentenceInputDto> sentences = getSentenceInputs(event.youtubeTranscriptId());
+            AnalyzeRequestDto request = new AnalyzeRequestDto(event.youtubeTranscriptId(), sentences);
+            BiasAnalysisResultDto result = webClient.post()
+                    .uri(pythonBaseUrl + "/analyze")
+                    .bodyValue(request)
+                    .retrieve()
+                    .bodyToMono(BiasAnalysisResultDto.class)
+                    .block();
+
+            // 3. BiasAnalysisResult 저장
+            BiasAnalysisResult savedResult = biasAnalysisResultRepository.save(
+                    BiasAnalysisResult.builder()
+                            .analysisJob(job)
+                            .targetId(job.getTargetId())
+                            .targetType(job.getTargetType())
+                            .overallBiasScore(result.overallBiasScore())
+                            .opinionScore(result.opinionScore())
+                            .emotionScore(result.emotionScore())
+                            .anonymousSourceScore(result.anonymousSourceScore())
+                            .headlineBodyGapScore(result.headlineBodyGapScore())
+                            .neutralityScore(result.neutralityScore())
+                            .summaryText(result.summaryText())
+                            .perspectiveSummary(result.perspectiveSummary())
+                            .evidenceSummary(result.evidenceSummary())
+                            .toneLabel(result.toneLabel())
+                            .build()
+            );
+
+            // 4. BiasAnalysisKeyword 리스트 저장
+            if (result.keywords() != null) {
+                biasAnalysisKeywordRepository.saveAll(
+                        result.keywords().stream()
+                                .map(k -> BiasAnalysisKeyword.builder()
+                                        .biasAnalysisResult(savedResult)
+                                        .keywordText(k.keywordText())
+                                        .keywordType(BiasKeywordType.valueOf(k.keywordType().toUpperCase()))
+                                        .score(k.score())
+                                        .build())
+                                .toList()
+                );
+            }
+
+            // 5. SentenceBiasLabel 리스트 저장
+            if (result.sentenceLabels() != null) {
+                sentenceBiasLabelRepository.saveAll(
+                        result.sentenceLabels().stream()
+                                .map(l -> SentenceBiasLabel.builder()
+                                        .biasAnalysisResult(savedResult)
+                                        .contentSentence(contentSentenceRepository.getReferenceById(l.contentSentenceId()))
+                                        .labelType(SentenceLabelType.valueOf(l.labelType().toUpperCase()))
+                                        .score(l.score())
+                                        .highlightColor(l.highlightColor())
+                                        .evidenceKeyword(l.evidenceKeyword())
+                                        .build())
+                                .toList()
+                );
+            }
+
+            // 6. BiasEvidence 리스트 저장
+            if (result.evidences() != null) {
+                biasEvidenceRepository.saveAll(
+                        result.evidences().stream()
+                                .map(e -> BiasEvidence.builder()
+                                        .biasAnalysisResult(savedResult)
+                                        .contentSentence(contentSentenceRepository.getReferenceById(e.contentSentenceId()))
+                                        .evidenceType(EvidenceType.valueOf(e.evidenceType().toUpperCase()))
+                                        .title(e.title())
+                                        .description(e.description())
+                                        .sourceText(e.sourceText())
+                                        .confidenceScore(e.confidenceScore())
+                                        .build())
+                                .toList()
+                );
+            }
+
+            // 7. SUCCESS 전이
+            job.updateStatus(JobStatus.SUCCESS);
+
         } catch (Exception e) {
             log.error("Analysis failed for job {}: {}", job.getId(), e.getMessage());
-            job.updateStatus(JobStatus.FAILED);
-            throw new AnalysisException(AnalysisErrorCode.ANALYSIS_JOB_FAILED, e.getMessage(), e);
+            job.markFailed(e.getMessage());
         }
 
         return job;

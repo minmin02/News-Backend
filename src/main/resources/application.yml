@@ -31,3 +31,6 @@ youtube:
 
 server:
   port: 8080
+
+python:
+  base-url: ${PYTHON_BASE_URL:http://localhost:8000}
