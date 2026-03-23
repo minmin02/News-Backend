@@ -28,6 +28,7 @@ public class AnalysisJob extends BaseEntity {
     @JoinColumn(name = "USER_ID")
     private User user;
 
+    // YoutubeVideo 엔티티의 pk
     private Long targetId;
 
     private String modelVersion;

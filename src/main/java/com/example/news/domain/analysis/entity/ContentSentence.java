@@ -22,6 +22,7 @@ public class ContentSentence extends BaseEntity {
     @Column(name = "CONTENT_SENTENCE_ID")
     private Long id;
 
+    // 영상 원본(YoutubeTranscript 엔티티) id 매핑 x
     private Long targetId;
 
     @Enumerated(EnumType.STRING)
