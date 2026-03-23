@@ -1,11 +1,10 @@
 package com.example.news.domain.analysis.entity;
 
 import com.example.news.domain.analysis.enums.BiasKeywordType;
+import com.example.news.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "bias_analysis_keyword")
@@ -13,7 +12,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class BiasAnalysisKeyword {
+public class BiasAnalysisKeyword extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,6 +30,4 @@ public class BiasAnalysisKeyword {
 
     private Double score;
 
-    @CreationTimestamp
-    private LocalDateTime createdAt;
 }

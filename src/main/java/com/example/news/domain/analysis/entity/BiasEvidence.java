@@ -1,11 +1,10 @@
 package com.example.news.domain.analysis.entity;
 
 import com.example.news.domain.analysis.enums.EvidenceType;
+import com.example.news.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "bias_evidence")
@@ -13,7 +12,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class BiasEvidence {
+public class BiasEvidence extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,6 +38,4 @@ public class BiasEvidence {
 
     private Double confidenceScore;
 
-    @CreationTimestamp
-    private LocalDateTime createdAt;
 }
