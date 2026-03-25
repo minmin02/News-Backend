@@ -28,12 +28,17 @@ public class YoutubeVideoService {
     @Value("${youtube.api.key}")
     private String apiKey;
 
-    // DB에 있ㅇ으면 바로 반환
+    // DB에 있으면 바로 반환
     @Transactional
     public YoutubeVideoDto.VideoDetail getVideo(String youtubeVideoId) {
-        YoutubeVideo video = youtubeVideoRepository.findByYoutubeVideoId(youtubeVideoId)
+        return YoutubeConverter.toVideoDetail(getOrFetchVideoEntity(youtubeVideoId));
+    }
+
+    // DB에 없으면 API에서 가져와 저장 후 Entity 반환 (다른 서비스에서도 재사용)
+    @Transactional
+    public YoutubeVideo getOrFetchVideoEntity(String youtubeVideoId) {
+        return youtubeVideoRepository.findByYoutubeVideoId(youtubeVideoId)
                 .orElseGet(() -> fetchFromApi(youtubeVideoId));
-        return YoutubeConverter.toVideoDetail(video);
     }
 
     // API에서 영상 직접 조회
