@@ -65,11 +65,11 @@ public class AnalysisService {
                 .jobType(JobType.VIDEO_BIAS_ANALYSIS)
                 .status(JobStatus.PENDING)
                 .build();
-        job = analysisJobRepository.save(job);
+        final AnalysisJob savedJob = analysisJobRepository.save(job);
 
         try {
             // 1. RUNNING 전이
-            job.updateStatus(JobStatus.RUNNING);
+            savedJob.updateStatus(JobStatus.RUNNING);
 
             // 2. Python FastAPI 호출
             List<SentenceInputDto> sentences = getSentenceInputs(event.youtubeTranscriptId());
@@ -84,9 +84,9 @@ public class AnalysisService {
             // 3. BiasAnalysisResult 저장
             BiasAnalysisResult savedResult = biasAnalysisResultRepository.save(
                     BiasAnalysisResult.builder()
-                            .analysisJob(job)
-                            .targetId(job.getTargetId())
-                            .targetType(job.getTargetType())
+                            .analysisJob(savedJob)
+                            .targetId(savedJob.getTargetId())
+                            .targetType(savedJob.getTargetType())
                             .overallBiasScore(result.overallBiasScore())
                             .opinionScore(result.opinionScore())
                             .emotionScore(result.emotionScore())
@@ -119,7 +119,7 @@ public class AnalysisService {
                 sentenceBiasLabelRepository.saveAll(
                         result.sentenceLabels().stream()
                                 .map(l -> SentenceBiasLabel.builder()
-                                        .biasAnalysisResult(savedResult)
+                                        .analysisJob(savedJob)
                                         .contentSentence(contentSentenceRepository.getReferenceById(l.contentSentenceId()))
                                         .labelType(SentenceLabelType.valueOf(l.labelType().toUpperCase()))
                                         .score(l.score())
@@ -148,14 +148,14 @@ public class AnalysisService {
             }
 
             // 7. SUCCESS 전이
-            job.updateStatus(JobStatus.SUCCESS);
+            savedJob.updateStatus(JobStatus.SUCCESS);
 
         } catch (Exception e) {
-            log.error("Analysis failed for job {}: {}", job.getId(), e.getMessage());
-            job.markFailed(e.getMessage());
+            log.error("Analysis failed for job {}: {}", savedJob.getId(), e.getMessage());
+            savedJob.markFailed(e.getMessage());
         }
 
-        return job;
+        return savedJob;
     }
 
     /**
