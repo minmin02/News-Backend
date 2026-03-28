@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface SentenceBiasLabelRepository extends JpaRepository<SentenceBiasLabel, Long> {
-    List<SentenceBiasLabel> findAllByBiasAnalysisResultId(Long biasAnalysisResultId);
+    List<SentenceBiasLabel> findAllByAnalysisJobId(Long analysisJobId);
 }

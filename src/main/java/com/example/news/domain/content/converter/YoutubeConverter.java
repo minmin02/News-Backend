@@ -3,6 +3,7 @@ package com.example.news.domain.content.converter;
 import com.example.news.domain.content.dto.YoutubeCommentDto;
 import com.example.news.domain.content.dto.YoutubeTranscriptDto;
 import com.example.news.domain.content.dto.YoutubeVideoDto;
+import com.example.news.domain.content.entity.ContentSource;
 import com.example.news.domain.content.entity.YoutubeComment;
 import com.example.news.domain.content.entity.YoutubeTranscript;
 import com.example.news.domain.content.entity.YoutubeVideo;
@@ -89,12 +90,17 @@ public class YoutubeConverter {
     }
 
     public static YoutubeVideo toYoutubeVideoEntity(Video video) {
+        return toYoutubeVideoEntity(video, null);
+    }
+
+    public static YoutubeVideo toYoutubeVideoEntity(Video video, ContentSource contentSource) {
         VideoSnippet snippet = video.getSnippet();
         VideoContentDetails contentDetails = video.getContentDetails();
         VideoStatistics statistics = video.getStatistics();
         String videoId = video.getId();
 
         return YoutubeVideo.builder()
+                .contentSource(contentSource)
                 .youtubeVideoId(videoId)
                 .originalUrl("https://www.youtube.com/watch?v=" + videoId)
                 .channelId(snippet.getChannelId())
