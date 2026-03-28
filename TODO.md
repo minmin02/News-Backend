@@ -19,9 +19,8 @@
 - [x] JobStatus RUNNING → SUCCESS / FAILED 전이 완성
 
 ## C 담당
-
-- [ ] controller/ — Content BC 수신 엔드포인트
-- [ ] converter/ — Entity ↔ DTO 변환
-- [ ] dto/ — 조회 응답 DTO
-- [ ] exception/ — 예외 처리 (GlobalExceptionHandler에 AnalysisException 추가)
-- [ ] 통합 테스트
+- [x] controller/ — Content BC 수신 엔드포인트
+- [x] converter/ — Entity ↔ DTO 변환 
+- [x] dto/ — 조회 응답 DTO
+- [x] exception/ — 예외 처리 (GlobalExceptionHandler에 AnalysisException 추가)
+- [x] 통합 테스트

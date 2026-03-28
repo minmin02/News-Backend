@@ -84,7 +84,7 @@ public class AnalysisService {
 
             // 2. Python FastAPI 호출
             List<SentenceInputDto> sentences = getSentenceInputs(event.youtubeTranscriptId());
-            AnalyzeRequestDto request = new AnalyzeRequestDto(event.youtubeTranscriptId(), sentences);
+            AnalyzeRequestDto request = new AnalyzeRequestDto(event.youtubeTranscriptId(), event.title(), event.language(), sentences);
             BiasAnalysisResultDto result = webClient.post()
                     .uri(pythonBaseUrl + "/analyze")
                     .bodyValue(request)
@@ -195,7 +195,9 @@ public class AnalysisService {
                     savedResult.getId(),
                     JobStatus.SUCCESS.name(),
                     result.overallBiasScore(),
-                    analysisKeywords
+                    analysisKeywords,
+                    result.summaryText(),
+                    result.biasTypeScores()
             );
 
         } catch (Exception e) {

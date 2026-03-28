@@ -8,5 +8,7 @@ import java.util.List;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record AnalyzeRequestDto(
         Long targetId,
+        String title,
+        String language,
         List<SentenceInputDto> sentences
 ) {}

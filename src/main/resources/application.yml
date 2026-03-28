@@ -28,6 +28,10 @@ cloudflare:
 youtube:
   api:
     key: ${YOUTUBE_API_KEY}
+  featured-channel-ids: "UCcQTRi69dsVYHN3exePtZ1A,UCF4Wxdo3inmxP-Y59wXDsFw,UCkinYTS9IHqOEwR1Sze2JTw,UCsU-I-vHLiaMfV_ceaYz5rQ,UChlgI3UHCOnwUGzWzbJ3H5w"
+
+ai-pipeline:
+  base-url: ${AI_PIPELINE_URL:http://localhost:8000}
 
 server:
   port: 8080

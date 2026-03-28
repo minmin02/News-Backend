@@ -32,6 +32,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -96,7 +97,7 @@ class AnalysisServiceTest {
     @SuppressWarnings("unchecked")
     void createAnalysisJob_returnsSuccessStatus() {
         // given
-        ContentPreparedEventDto event = new ContentPreparedEventDto(1L, 10L, "KR", "ko", List.of());
+        ContentPreparedEventDto event = new ContentPreparedEventDto(1L, 10L, "테스트 제목", "KR", "ko", List.of());
         AnalysisJob saved = AnalysisJob.builder()
                 .targetId(10L)
                 .targetType(TargetType.YOUTUBE_VIDEO)
@@ -112,6 +113,7 @@ class AnalysisServiceTest {
         BiasAnalysisResultDto dto = new BiasAnalysisResultDto(
                 10L, 0.5, 0.4, 0.3, 0.2, null, null,
                 "summary", "perspective", "evidence", "neutral",
+                61.89, "주관적 문장 비율 57%", Map.of("OPINION", 0.4, "EMOTIONAL", 0.3),
                 List.of(), List.of(labelWithOffset), List.of()
         );
         when(webClient.post()).thenReturn(requestBodyUriSpec);
@@ -139,7 +141,7 @@ class AnalysisServiceTest {
     @Test
     void createAnalysisJob_returnsFailedStatus_whenPythonThrows() {
         // given
-        ContentPreparedEventDto event = new ContentPreparedEventDto(1L, 10L, "KR", "ko", List.of());
+        ContentPreparedEventDto event = new ContentPreparedEventDto(1L, 10L, "테스트 제목", "KR", "ko", List.of());
         AnalysisJob saved = AnalysisJob.builder()
                 .targetId(10L)
                 .targetType(TargetType.YOUTUBE_VIDEO)

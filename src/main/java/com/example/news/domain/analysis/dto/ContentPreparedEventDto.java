@@ -9,6 +9,8 @@ import java.util.List;
 public record ContentPreparedEventDto(
         Long contentId,
         Long youtubeTranscriptId,
+        // ContentBC에서 title도 보내줘야함, analysis 파이썬에서 제목-본문 갭에서 쓰임
+        String title,
         String country,
         String language,
         List<SentenceInputDto> sentences

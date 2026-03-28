@@ -10,6 +10,7 @@ import com.example.news.domain.analysis.service.BiasAnalysisResultService;
 import com.example.news.global.config.SecurityConfig;
 import com.example.news.global.jwt.JwtAuthenticationFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
@@ -47,6 +48,10 @@ class AnalysisControllerTest {
     @Autowired
     ObjectMapper objectMapper;
 
+    // @EnableJpaAuditing이 @SpringBootApplication에 있어 @WebMvcTest 시 JPA 컨텍스트 없이 실패 → mock으로 해결
+    @MockBean
+    JpaMetamodelMappingContext jpaMetamodelMappingContext;
+
     @MockBean
     AnalysisService analysisService;
 
@@ -56,7 +61,7 @@ class AnalysisControllerTest {
     @Test
     void analyze_returns200_andJobIdStatus() throws Exception {
         // given
-        ContentPreparedEventDto event = new ContentPreparedEventDto(1L, 10L, "KR", "ko", List.of());
+        ContentPreparedEventDto event = new ContentPreparedEventDto(1L, 10L, "테스트 제목", "KR", "ko", List.of());
 
         // createAnalysisJob()은 Python 호출 + 저장까지 동기 처리 후 반환 → 200 OK
         AnalysisJob job = AnalysisJob.builder()
@@ -80,7 +85,7 @@ class AnalysisControllerTest {
     @Test
     void analyze_returns200_whenJobFailed() throws Exception {
         // given — Python 호출 실패 시에도 job은 FAILED 상태로 정상 반환 (예외 throw 아님)
-        ContentPreparedEventDto event = new ContentPreparedEventDto(1L, 10L, "KR", "ko", List.of());
+        ContentPreparedEventDto event = new ContentPreparedEventDto(1L, 10L, "테스트 제목", "KR", "ko", List.of());
 
         AnalysisJob job = AnalysisJob.builder()
                 .targetId(10L)
