@@ -16,6 +16,10 @@ spring:
 youtube:
   api:
     key: test-key
+  featured-channel-ids: "UCtest"
+
+ai-pipeline:
+  base-url: http://localhost:8000
 
 jwt:
   secret: test-secret-key-for-test-environment-only

@@ -10,5 +10,9 @@ public record SentenceLabelResultDto(
         String labelType,
         Double score,
         @Nullable String highlightColor,
-        @Nullable String evidenceKeyword
+        @Nullable String evidenceKeyword,
+        // Python SpanLabelDto에서 오는 span 위치 정보 (HighlightSpan 저장에 사용)
+        @Nullable Integer startOffset,
+        @Nullable Integer endOffset,
+        @Nullable String matchedWord
 ) {}

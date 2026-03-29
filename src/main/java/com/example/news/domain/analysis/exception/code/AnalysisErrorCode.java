@@ -9,7 +9,8 @@ import lombok.Getter;
 public enum AnalysisErrorCode implements ResponseCode {
 
     ANALYSIS_JOB_FAILED("A001", "분석 작업 실행 중 오류가 발생했습니다."),
-    ANALYSIS_JOB_NOT_FOUND("A002", "분석 작업을 찾을 수 없습니다.");
+    ANALYSIS_JOB_NOT_FOUND("A002", "분석 작업을 찾을 수 없습니다."),
+    ANALYSIS_RESULT_NOT_FOUND("A003", "분석 결과를 찾을 수 없습니다.");
 
     private final String statusCode;
     private final String message;
