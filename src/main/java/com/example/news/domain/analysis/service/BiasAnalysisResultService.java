@@ -1,5 +1,6 @@
 package com.example.news.domain.analysis.service;
 
+import com.example.news.domain.analysis.converter.AnalysisResultConverter;
 import com.example.news.domain.analysis.dto.AnalysisResultResponse;
 import com.example.news.domain.analysis.entity.BiasAnalysisResult;
 import com.example.news.domain.analysis.entity.HighlightResult;
@@ -38,23 +39,12 @@ public class BiasAnalysisResultService {
 
         var keywords = biasAnalysisKeywordRepository.findAllByBiasAnalysisResultId(result.getId())
                 .stream()
-                .map(k -> new AnalysisResultResponse.KeywordItem(
-                        k.getKeywordText(),
-                        k.getKeywordType(),
-                        k.getScore()
-                ))
+                .map(AnalysisResultConverter::toKeywordItem)
                 .toList();
 
         var evidences = biasEvidenceRepository.findAllByBiasAnalysisResultId(result.getId())
                 .stream()
-                .map(e -> new AnalysisResultResponse.EvidenceItem(
-                        e.getContentSentence().getId(),
-                        e.getEvidenceType(),
-                        e.getTitle(),
-                        e.getDescription(),
-                        e.getSourceText(),
-                        e.getConfidenceScore()
-                ))
+                .map(AnalysisResultConverter::toEvidenceItem)
                 .toList();
 
         // SentenceBiasLabel은 AnalysisJob을 통해 조회
@@ -62,13 +52,7 @@ public class BiasAnalysisResultService {
         var sentenceLabels = Optional.ofNullable(result.getAnalysisJob())
                 .map(job -> sentenceBiasLabelRepository.findAllByAnalysisJobId(job.getId())
                         .stream()
-                        .map(l -> new AnalysisResultResponse.SentenceLabelItem(
-                                l.getContentSentence().getId(),
-                                l.getLabelType(),
-                                l.getScore(),
-                                l.getHighlightColor(),
-                                l.getEvidenceKeyword()
-                        ))
+                        .map(AnalysisResultConverter::toSentenceLabelItem)
                         .toList())
                 .orElse(List.of());
 
@@ -78,32 +62,9 @@ public class BiasAnalysisResultService {
                 .map(highlightSpanRepository::findByHighlightResultId)
                 .orElse(List.of())
                 .stream()
-                .map(s -> new AnalysisResultResponse.HighlightSpanItem(
-                        s.getContentSentence().getId(),
-                        s.getStartOffset(),
-                        s.getEndOffset(),
-                        s.getLabelType(),
-                        s.getScore(),
-                        s.getMatchedWord()
-                ))
+                .map(AnalysisResultConverter::toHighlightSpanItem)
                 .toList();
 
-        return new AnalysisResultResponse(
-                result.getTargetId(),
-                result.getOverallBiasScore(),
-                result.getOpinionScore(),
-                result.getEmotionScore(),
-                result.getAnonymousSourceScore(),
-                result.getHeadlineBodyGapScore(),
-                result.getNeutralityScore(),
-                result.getSummaryText(),
-                result.getPerspectiveSummary(),
-                result.getEvidenceSummary(),
-                result.getToneLabel(),
-                keywords,
-                sentenceLabels,
-                evidences,
-                highlightSpans
-        );
+        return AnalysisResultConverter.toResponse(result, keywords, sentenceLabels, evidences, highlightSpans);
     }
 }
