@@ -8,7 +8,6 @@ import com.example.news.domain.analysis.service.AnalysisService;
 import com.example.news.domain.analysis.service.BiasAnalysisResultService;
 import com.example.news.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,16 +28,16 @@ public class AnalysisController {
      * createAnalysisJob()이 block() 기반 동기 처리이므로 200 OK 반환.
      */
     @PostMapping("/analyze")
-    public ResponseEntity<ApiResponse<AnalysisJobResponse>> analyze(
+    public ApiResponse<AnalysisJobResponse> analyze(
             @RequestBody ContentPreparedEventDto event) {
         AnalysisJob job = analysisService.createAnalysisJob(event);
-        return ResponseEntity.ok(ApiResponse.ok(new AnalysisJobResponse(job.getId(), job.getStatus())));
+        return ApiResponse.ok(new AnalysisJobResponse(job.getId(), job.getStatus()));
     }
 
     @GetMapping("/{targetId}")
-    public ResponseEntity<ApiResponse<AnalysisResultResponse>> getAnalysisResult(
+    public ApiResponse<AnalysisResultResponse> getAnalysisResult(
             @PathVariable Long targetId) {
         AnalysisResultResponse result = biasAnalysisResultService.getAnalysisResult(targetId);
-        return ResponseEntity.ok(ApiResponse.ok(result));
+        return ApiResponse.ok(result);
     }
 }
