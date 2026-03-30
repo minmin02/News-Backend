@@ -1,12 +1,15 @@
 package com.example.news.global.exception;
 
 
+import com.example.news.domain.analysis.exception.AnalysisException;
+import com.example.news.domain.analysis.exception.code.AnalysisErrorCode;
 import com.example.news.global.code.CommonResponseCode;
 import com.example.news.global.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -80,6 +83,20 @@ public class GlobalExceptionHandler {
 
         // 그 외 무결성 제약 위반
         return ApiResponse.error(CommonResponseCode.BAD_REQUEST_ERROR, "데이터 무결성 예외가 발생했습니다.");
+    }
+
+    @ExceptionHandler(AnalysisException.class)
+    public ResponseEntity<ApiResponse<Object>> handleAnalysisException(AnalysisException e) {
+        HttpStatus status = switch (e.getErrorCode()) {
+            case ANALYSIS_JOB_NOT_FOUND, ANALYSIS_RESULT_NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case ANALYSIS_JOB_FAILED -> HttpStatus.INTERNAL_SERVER_ERROR;
+        };
+        log.warn("Analysis exception [{}] {} → HTTP {}: {}",
+                e.getErrorCode().getStatusCode(),
+                e.getErrorCode().name(),
+                status.value(),
+                e.getMessage());
+        return ResponseEntity.status(status).body(ApiResponse.error(e.getErrorCode()));
     }
 
     @ExceptionHandler(CustomException.class)

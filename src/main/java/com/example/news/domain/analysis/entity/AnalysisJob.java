@@ -54,13 +54,37 @@ public class AnalysisJob extends BaseEntity {
 
     private LocalDateTime finishedAt;
 
-    public void updateStatus(JobStatus newStatus) {
-        this.status = newStatus;
+    public void start() {
+        if (this.status != JobStatus.PENDING) {
+            throw new IllegalStateException("start()는 PENDING 상태에서만 호출할 수 있습니다. 현재 상태: " + this.status);
+        }
+        this.status = JobStatus.RUNNING;
     }
 
-    public void markFailed(String errorMessage) {
+    public void complete() {
+        if (this.status != JobStatus.RUNNING) {
+            throw new IllegalStateException("complete()는 RUNNING 상태에서만 호출할 수 있습니다. 현재 상태: " + this.status);
+        }
+        this.status = JobStatus.SUCCESS;
+        this.finishedAt = LocalDateTime.now();
+    }
+
+    public void fail(String errorMessage) {
+        if (this.status != JobStatus.PENDING && this.status != JobStatus.RUNNING) {
+            throw new IllegalStateException("fail()는 PENDING 또는 RUNNING 상태에서만 호출할 수 있습니다. 현재 상태: " + this.status);
+        }
         this.status = JobStatus.FAILED;
         this.errorMessage = errorMessage;
+        this.finishedAt = LocalDateTime.now();
+    }
+
+    public void retry() {
+        if (this.status != JobStatus.FAILED) {
+            throw new IllegalStateException("retry()는 FAILED 상태에서만 호출할 수 있습니다. 현재 상태: " + this.status);
+        }
+        this.status = JobStatus.PENDING;
+        this.errorMessage = null;
+        this.finishedAt = null;
     }
 
 }

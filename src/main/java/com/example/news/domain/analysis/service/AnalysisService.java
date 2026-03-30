@@ -8,6 +8,8 @@ import com.example.news.domain.analysis.entity.AnalysisJob;
 import com.example.news.domain.analysis.entity.BiasAnalysisKeyword;
 import com.example.news.domain.analysis.entity.BiasAnalysisResult;
 import com.example.news.domain.analysis.entity.BiasEvidence;
+import com.example.news.domain.analysis.entity.HighlightResult;
+import com.example.news.domain.analysis.entity.HighlightSpan;
 import com.example.news.domain.analysis.entity.SentenceBiasLabel;
 import com.example.news.domain.analysis.enums.BiasKeywordType;
 import com.example.news.domain.analysis.enums.EvidenceType;
@@ -20,10 +22,14 @@ import com.example.news.domain.analysis.repository.BiasAnalysisKeywordRepository
 import com.example.news.domain.analysis.repository.BiasAnalysisResultRepository;
 import com.example.news.domain.analysis.repository.BiasEvidenceRepository;
 import com.example.news.domain.analysis.repository.ContentSentenceRepository;
+import com.example.news.domain.analysis.event.AnalysisCompletedEvent;
+import com.example.news.domain.analysis.repository.HighlightResultRepository;
+import com.example.news.domain.analysis.repository.HighlightSpanRepository;
 import com.example.news.domain.analysis.repository.SentenceBiasLabelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -41,7 +47,10 @@ public class AnalysisService {
     private final BiasAnalysisKeywordRepository biasAnalysisKeywordRepository;
     private final SentenceBiasLabelRepository sentenceBiasLabelRepository;
     private final BiasEvidenceRepository biasEvidenceRepository;
+    private final HighlightResultRepository highlightResultRepository;
+    private final HighlightSpanRepository highlightSpanRepository;
     private final WebClient webClient;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${python.base-url}")
     private String pythonBaseUrl;
@@ -67,13 +76,15 @@ public class AnalysisService {
                 .build();
         final AnalysisJob savedJob = analysisJobRepository.save(job);
 
+        AnalysisCompletedEvent completedEvent = null;
+
         try {
             // 1. RUNNING 전이
-            savedJob.updateStatus(JobStatus.RUNNING);
+            savedJob.start();
 
             // 2. Python FastAPI 호출
             List<SentenceInputDto> sentences = getSentenceInputs(event.youtubeTranscriptId());
-            AnalyzeRequestDto request = new AnalyzeRequestDto(event.youtubeTranscriptId(), sentences);
+            AnalyzeRequestDto request = new AnalyzeRequestDto(event.youtubeTranscriptId(), event.title(), event.language(), sentences);
             BiasAnalysisResultDto result = webClient.post()
                     .uri(pythonBaseUrl + "/analyze")
                     .bodyValue(request)
@@ -147,12 +158,59 @@ public class AnalysisService {
                 );
             }
 
-            // 7. SUCCESS 전이
-            savedJob.updateStatus(JobStatus.SUCCESS);
+            // 7. HighlightResult / HighlightSpan 저장
+            // offset 정보(startOffset, endOffset)가 있는 label만 span으로 저장
+            if (result.sentenceLabels() != null && !result.sentenceLabels().isEmpty()) {
+                HighlightResult highlightResult = highlightResultRepository.save(
+                        HighlightResult.builder()
+                                .biasAnalysisResult(savedResult)
+                                .build()
+                );
+                highlightSpanRepository.saveAll(
+                        result.sentenceLabels().stream()
+                                .filter(l -> l.startOffset() != null && l.endOffset() != null)
+                                .map(l -> HighlightSpan.builder()
+                                        .highlightResult(highlightResult)
+                                        .contentSentence(contentSentenceRepository.getReferenceById(l.contentSentenceId()))
+                                        .startOffset(l.startOffset())
+                                        .endOffset(l.endOffset())
+                                        .labelType(SentenceLabelType.valueOf(l.labelType().toUpperCase()))
+                                        .score(l.score())
+                                        .matchedWord(l.matchedWord())
+                                        .build())
+                                .toList()
+                );
+            }
+
+            // 8. SUCCESS 전이
+            savedJob.complete();
+
+            // 9. 이벤트 페이로드 준비 (발행은 try 밖에서 — 발행 실패가 분석 실패로 이어지지 않도록)
+            List<String> analysisKeywords = result.keywords() != null
+                    ? result.keywords().stream().map(k -> k.keywordText()).toList()
+                    : List.of();
+            completedEvent = new AnalysisCompletedEvent(
+                    savedJob.getTargetId(),
+                    savedJob.getId(),
+                    savedResult.getId(),
+                    JobStatus.SUCCESS.name(),
+                    result.overallBiasScore(),
+                    analysisKeywords,
+                    result.summaryText(),
+                    result.biasTypeScores()
+            );
 
         } catch (Exception e) {
             log.error("Analysis failed for job {}: {}", savedJob.getId(), e.getMessage());
-            savedJob.markFailed(e.getMessage());
+            savedJob.fail(e.getMessage());
+        }
+
+        if (completedEvent != null) {
+            try {
+                eventPublisher.publishEvent(completedEvent);
+            } catch (Exception e) {
+                log.error("AnalysisCompletedEvent 발행 실패 (jobId={})", completedEvent.analysisJobId(), e);
+            }
         }
 
         return savedJob;
