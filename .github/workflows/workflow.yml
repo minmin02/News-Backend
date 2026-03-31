@@ -42,7 +42,11 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ~/News-Backend
-            git pull origin main
+            git fetch origin develop
+            git reset --hard origin/develop
+            
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/spring-news-app:latest
-            docker compose up -d --no-deps app
+            
+            docker compose up -d --no-build --force-recreate app
+            
             docker image prune -f
