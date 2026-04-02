@@ -23,6 +23,7 @@ public record BiasAnalysisResultDto(
         Double subjectivityScore,
         String scoreEvidence,
         Map<String, Double> biasTypeScores,
+        @Nullable List<SentenceInputDto> sentences,
         @Nullable List<KeywordResultDto> keywords,
         @Nullable List<SentenceLabelResultDto> sentenceLabels,
         @Nullable List<EvidenceResultDto> evidences

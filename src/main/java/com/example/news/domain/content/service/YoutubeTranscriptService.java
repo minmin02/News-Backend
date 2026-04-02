@@ -60,6 +60,34 @@ public class YoutubeTranscriptService {
         return YoutubeConverter.toUnavailableTranscriptDto(youtubeVideoId);
     }
 
+    /**
+     * transcript entity를 반환한다. 없으면 Python AI Pipeline에서 fetch 후 저장.
+     * DB id, transcriptText 등 entity 전체가 필요한 경우 사용.
+     *
+     * @return YoutubeTranscript entity, 자막 없으면 null
+     */
+    @Transactional
+    public YoutubeTranscript getOrFetchTranscriptEntity(String youtubeVideoId) {
+        YoutubeVideo video = youtubeVideoService.getOrFetchVideoEntity(youtubeVideoId);
+
+        Optional<YoutubeTranscript> existing = youtubeTranscriptRepository.findByYoutubeVideo(video);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        for (String regionCode : new String[]{"KR", "US"}) {
+            AiPipelineTranscriptResponse response = fetchFromAiPipeline(youtubeVideoId, regionCode);
+            if (response != null && "success".equals(response.transcriptStatus()) && response.transcript() != null && !response.transcript().isBlank()) {
+                String langCode = REGION_TO_LANG.get(regionCode);
+                return youtubeTranscriptRepository.save(
+                        YoutubeConverter.toTranscriptEntity(video, response.transcript(), TranscriptSource.YOUTUBE_CAPTION, langCode)
+                );
+            }
+        }
+
+        return null;
+    }
+
     // Python api 호출
     private AiPipelineTranscriptResponse fetchFromAiPipeline(String videoId, String regionCode) {
         try {
