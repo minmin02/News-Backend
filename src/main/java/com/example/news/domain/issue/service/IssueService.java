@@ -9,9 +9,10 @@ import com.example.news.domain.content.service.YoutubeSearchService;
 import com.example.news.domain.issue.converter.IssueConverter;
 import com.example.news.domain.issue.dto.*;
 import com.example.news.domain.issue.entity.IssueCluster;
-import com.example.news.domain.issue.entity.IssueClusterVideo;
+import com.example.news.domain.issue.entity.IssueClusterItem;
+import com.example.news.domain.issue.enums.ClusterStatus;
+import com.example.news.domain.issue.repository.IssueClusterItemRepository;
 import com.example.news.domain.issue.repository.IssueClusterRepository;
-import com.example.news.domain.issue.repository.IssueClusterVideoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +33,7 @@ public class IssueService {
     private final YoutubeSearchService youtubeSearchService;
     private final YoutubeVideoRepository youtubeVideoRepository;
     private final IssueClusterRepository issueClusterRepository;
-    private final IssueClusterVideoRepository issueClusterVideoRepository;
+    private final IssueClusterItemRepository issueClusterItemRepository;
     private final BiasAnalysisResultRepository biasAnalysisResultRepository;
 
     // 국가별 이슈 영상 검색
@@ -51,10 +53,11 @@ public class IssueService {
                         .searchKeyword(searchKeyword)
                         .periodStartDate(startDate)
                         .periodEndDate(endDate)
+                        .status(ClusterStatus.PENDING)
                         .build()
         );
 
-        // 국가별 YouTube 검색 + issue_cluster_video 저장
+        // 국가별 YouTube 검색 + issue_cluster_item 저장
         for (String countryCode : countryList) {
             String translatedKeyword = translatedKeywords.get(countryCode);
             String langCode = IssueConverter.getLanguageCode(countryCode);
@@ -62,16 +65,16 @@ public class IssueService {
             var videos = youtubeSearchService.searchByRegion(
                     translatedKeyword, countryCode, langCode, startDate, endDate);
 
-            saveClusterVideos(cluster, countryCode, videos);
+            saveClusterItems(cluster, countryCode, videos);
         }
 
-        // 저장된 영상 flat 리스트로 반환
-        // 이게 뭔소리냐면
-        // KR[영상1, 영상2, 영상3]
-        // JP[영상4, 영상5, 영상6]
-        // 이걸 flat 리스트로 변환해서 [영상1, 영상2, 영상3, 영상4, 영상5, 영상6] 만든다는 소리
-        List<IssueClusterVideo> clusterVideos = issueClusterVideoRepository.findByIssueCluster(cluster);
-        return IssueConverter.toSearchResponse(cluster, clusterVideos);
+        // 저장된 아이템 조회 후 영상 정보 batch fetch
+        List<IssueClusterItem> clusterItems = issueClusterItemRepository.findByIssueClusterId(cluster.getId());
+        List<Long> videoIds = clusterItems.stream().map(IssueClusterItem::getYoutubeVideoId).toList();
+        Map<Long, YoutubeVideo> videoMap = youtubeVideoRepository.findAllById(videoIds).stream()
+                .collect(Collectors.toMap(YoutubeVideo::getId, v -> v));
+
+        return IssueConverter.toSearchResponse(cluster, clusterItems, videoMap);
     }
 
     // 국가별 대표 영상 비교 결과 조회 (선택한 영상 ID 직접 지정)
@@ -101,14 +104,14 @@ public class IssueService {
                 .build();
     }
 
-    private void saveClusterVideos(IssueCluster cluster, String countryCode,
-                                   List<com.example.news.domain.content.dto.YoutubeVideoDto.VideoCard> videoCards) {
+    private void saveClusterItems(IssueCluster cluster, String countryCode,
+                                  List<com.example.news.domain.content.dto.YoutubeVideoDto.VideoCard> videoCards) {
         for (var card : videoCards) {
             youtubeVideoRepository.findByYoutubeVideoId(card.getYoutubeVideoId())
-                    .ifPresent(video -> issueClusterVideoRepository.save(
-                            IssueClusterVideo.builder()
+                    .ifPresent(video -> issueClusterItemRepository.save(
+                            IssueClusterItem.builder()
                                     .issueCluster(cluster)
-                                    .youtubeVideo(video)
+                                    .youtubeVideoId(video.getId())
                                     .countryCode(countryCode)
                                     .isRepresentative(false)
                                     .build()

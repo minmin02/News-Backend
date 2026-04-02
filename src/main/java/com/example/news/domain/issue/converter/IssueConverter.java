@@ -4,7 +4,7 @@ import com.example.news.domain.analysis.entity.BiasAnalysisResult;
 import com.example.news.domain.content.entity.YoutubeVideo;
 import com.example.news.domain.issue.dto.*;
 import com.example.news.domain.issue.entity.IssueCluster;
-import com.example.news.domain.issue.entity.IssueClusterVideo;
+import com.example.news.domain.issue.entity.IssueClusterItem;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -45,28 +45,33 @@ public class IssueConverter {
     }
 
     // 국가별 이슈 영상 검색
-    public static IssueSearchResponseDto.VideoResult toVideoResult(IssueClusterVideo icv) {
+    public static IssueSearchResponseDto.VideoResult toVideoResult(IssueClusterItem item, YoutubeVideo video) {
         return IssueSearchResponseDto.VideoResult.builder()
-                .videoId(icv.getYoutubeVideo().getId())
-                .youtubeVideoId(icv.getYoutubeVideo().getYoutubeVideoId())
-                .countryCode(icv.getCountryCode())
-                .title(icv.getYoutubeVideo().getTitle())
-                .channelName(icv.getYoutubeVideo().getChannelName())
-                .thumbnailUrl(icv.getYoutubeVideo().getThumbnailUrl())
-                .publishedAt(icv.getYoutubeVideo().getPublishedAt())
-                .similarityScore(icv.getSimilarityScore())
-                .isRepresentative(icv.getIsRepresentative())
+                .videoId(video.getId())
+                .youtubeVideoId(video.getYoutubeVideoId())
+                .countryCode(item.getCountryCode())
+                .title(video.getTitle())
+                .channelName(video.getChannelName())
+                .thumbnailUrl(video.getThumbnailUrl())
+                .publishedAt(video.getPublishedAt())
+                .similarityScore(item.getSimilarityScore())
+                .isRepresentative(item.getIsRepresentative())
                 .build();
     }
 
-    public static IssueSearchResponseDto toSearchResponse(IssueCluster cluster, List<IssueClusterVideo> videos) {
+    public static IssueSearchResponseDto toSearchResponse(IssueCluster cluster,
+                                                          List<IssueClusterItem> items,
+                                                          Map<Long, YoutubeVideo> videoMap) {
         return IssueSearchResponseDto.builder()
                 .searchKeyword(cluster.getSearchKeyword())
                 .clusterTitle(cluster.getClusterTitle())
                 .clusterSummary(cluster.getClusterSummary())
                 .periodStartDate(cluster.getPeriodStartDate())
                 .periodEndDate(cluster.getPeriodEndDate())
-                .results(videos.stream().map(IssueConverter::toVideoResult).toList())
+                .results(items.stream()
+                        .filter(item -> videoMap.containsKey(item.getYoutubeVideoId()))
+                        .map(item -> toVideoResult(item, videoMap.get(item.getYoutubeVideoId())))
+                        .toList())
                 .build();
     }
 

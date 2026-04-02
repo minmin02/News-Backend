@@ -3,7 +3,6 @@ package com.example.news.domain.issue.dto;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,7 +28,7 @@ public class IssueSearchResponseDto {
         private String channelName;
         private String thumbnailUrl;
         private LocalDateTime publishedAt;
-        private BigDecimal similarityScore;
+        private Double similarityScore;
         private Boolean isRepresentative;
     }
 }
