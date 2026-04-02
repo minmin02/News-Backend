@@ -25,8 +25,6 @@ public class IssueCluster {
     @Column(columnDefinition = "TEXT")
     private String clusterSummary;
 
-    private String representativeKeyword;
-
     private LocalDate periodStartDate;
 
     private LocalDate periodEndDate;

@@ -1,10 +1,13 @@
 package com.example.news.domain.issue.converter;
 
 import com.example.news.domain.analysis.entity.BiasAnalysisResult;
+import com.example.news.domain.content.entity.YoutubeVideo;
 import com.example.news.domain.issue.dto.*;
 import com.example.news.domain.issue.entity.IssueCluster;
 import com.example.news.domain.issue.entity.IssueClusterVideo;
 
+import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -18,8 +21,30 @@ public class IssueConverter {
             "KR", "한국어", "US", "영어", "CN", "중국어", "JP", "일본어"
     );
 
-    // 국가별 이슈 영상 검색
+    private static final Map<String, String> COUNTRY_TO_LANG = Map.of(
+            "KR", "ko", "US", "en", "CN", "zh-CN", "JP", "ja"
+    );
 
+    // 국가코드 => youtube api용 언어코드 반환 ex KR => ko
+    public static String getLanguageCode(String countryCode) {
+        String lang = COUNTRY_TO_LANG.get(countryCode);
+        if (lang == null) throw new IllegalArgumentException("Unsupported country code: " + countryCode);
+        return lang;
+    }
+
+    // KR, JP, US => 리스트로 변환
+    public static List<String> parseCountries(String countries) {
+        return Arrays.asList(countries.split(","));
+    }
+
+    // 7d => 오늘 ~ 7일로 변환
+    public static LocalDate[] parsePeriod(String period) {
+        int days = "7d".equals(period) ? 7 : 30;
+        LocalDate end = LocalDate.now();
+        return new LocalDate[]{end.minusDays(days), end};
+    }
+
+    // 국가별 이슈 영상 검색
     public static IssueSearchResponseDto.VideoResult toVideoResult(IssueClusterVideo icv) {
         return IssueSearchResponseDto.VideoResult.builder()
                 .videoId(icv.getYoutubeVideo().getId())
@@ -45,23 +70,17 @@ public class IssueConverter {
                 .build();
     }
 
-    // 국가별 대표 영상 비교 결과 조회
-
     public static IssueComparisonResponseDto.CountryResult toComparisonCountryResult(
             String countryCode,
-            IssueClusterVideo icv,
-            BiasAnalysisResult bias,
-            String searchKeyword) {
-
-        var video = icv.getYoutubeVideo();
+            YoutubeVideo video,
+            BiasAnalysisResult bias) {
 
         IssueComparisonResponseDto.ComparisonSummary comparison =
                 IssueComparisonResponseDto.ComparisonSummary.builder()
-                        .searchKeyword(searchKeyword)
                         .perspectiveSummary(bias != null ? bias.getPerspectiveSummary() : null)
                         .toneLabel(bias != null ? bias.getToneLabel() : null)
                         .representativeChannelName(video.getChannelName())
-                        .coreKeywords(List.of())  // BiasAnalysisKeyword는 별도 조회 없이 빈 배열
+                        .coreKeywords(List.of())
                         .build();
 
         return IssueComparisonResponseDto.CountryResult.builder()
@@ -82,41 +101,6 @@ public class IssueConverter {
                 .perspectiveSummary(bias != null ? bias.getPerspectiveSummary() : null)
                 .evidenceSummary(bias != null ? bias.getEvidenceSummary() : null)
                 .comparison(comparison)
-                .build();
-    }
-
-    // 국가별 이슈 영상 편향 조회
-
-    public static IssueBiasResponseDto.BiasResult toBiasResult(String youtubeVideoId, String countryCode, BiasAnalysisResult bias) {
-        return IssueBiasResponseDto.BiasResult.builder()
-                .countryCode(countryCode)
-                .youtubeVideoId(youtubeVideoId)
-                .overallBiasScore(bias.getOverallBiasScore())
-                .opinionScore(bias.getOpinionScore())
-                .emotionScore(bias.getEmotionScore())
-                .anonymousSourceScore(bias.getAnonymousSourceScore())
-                .headlineBodyGapScore(bias.getHeadlineBodyGapScore())
-                .neutralityScore(bias.getNeutralityScore())
-                .toneLabel(bias.getToneLabel())
-                .perspectiveSummary(bias.getPerspectiveSummary())
-                .build();
-    }
-
-    // 인기 비교 이슈 영상 카드
-
-    public static IssuePopularVideosResponseDto.VideoCard toPopularVideoCard(IssueClusterVideo icv) {
-        var video = icv.getYoutubeVideo();
-        return IssuePopularVideosResponseDto.VideoCard.builder()
-                .videoId(video.getId())
-                .youtubeVideoId(video.getYoutubeVideoId())
-                .title(video.getTitle())
-                .channelName(video.getChannelName())
-                .thumbnailUrl(video.getThumbnailUrl())
-                .originalUrl(video.getOriginalUrl())
-                .publishedAt(video.getPublishedAt())
-                .viewCount(video.getViewCount())
-                .durationSeconds(video.getDurationSeconds())
-                .countryCode(icv.getCountryCode())
                 .build();
     }
 }

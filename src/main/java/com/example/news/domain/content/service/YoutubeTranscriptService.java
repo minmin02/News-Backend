@@ -76,7 +76,7 @@ public class YoutubeTranscriptService {
         }
     }
 
-    private record AiPipelineTranscriptResponse(
+    record AiPipelineTranscriptResponse(
             @JsonProperty("video_id") String videoId,
             String transcript,
             @JsonProperty("transcript_status") String transcriptStatus

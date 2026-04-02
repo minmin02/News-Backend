@@ -10,7 +10,6 @@ import java.util.List;
 @Builder
 public class IssueComparisonResponseDto {
 
-    private String searchKeyword;
     private List<CountryResult> countries;
 
     @Getter
@@ -38,7 +37,6 @@ public class IssueComparisonResponseDto {
     @Getter
     @Builder
     public static class ComparisonSummary {
-        private String searchKeyword;
         private String perspectiveSummary;
         private String toneLabel;
         private String representativeChannelName;

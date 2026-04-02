@@ -20,7 +20,7 @@ public class KeywordTranslationService {
 
     private static final String TRANSLATE_URL = "https://translation.googleapis.com/language/translate/v2";
 
-    // 국가코드 → 언어코드 매핑
+    // 국가코드에서 언어코드로 매핑
     private static final Map<String, String> COUNTRY_TO_LANG = Map.of(
             "KR", "ko",
             "US", "en",
@@ -34,14 +34,8 @@ public class KeywordTranslationService {
     @Value("${google.translate.api-key}")
     private String apiKey;
 
-    /**
-     * 원본 키워드(한국어)를 각 국가 언어로 번역
-     * KR은 번역 없이 원본 반환
-     *
-     * @param keyword      한국어 원본 키워드
-     * @param countryCodes ["KR", "US", "CN", "JP"] 중 일부
-     * @return { "KR": "우크라이나", "CN": "乌克兰", ... }
-     */
+    // 한국어 키워드를 각 국가 언어로 번역해서 Map<국가코드, 번역된키워드> 반환
+    // KR은 번역 없이 원본 그대로 반환
     public Map<String, String> translate(String keyword, List<String> countryCodes) {
         Map<String, String> result = new HashMap<>();
 
@@ -63,17 +57,7 @@ public class KeywordTranslationService {
         return result;
     }
 
-    /**
-     * 국가코드에 해당하는 YouTube relevanceLanguage 코드 반환
-     */
-    public static String getLanguageCode(String countryCode) {
-        String lang = COUNTRY_TO_LANG.get(countryCode);
-        if (lang == null) {
-            throw new IllegalArgumentException("Unsupported country code: " + countryCode);
-        }
-        return lang;
-    }
-
+    // 구글 translate api에서 실제 HTTP 호출
     private String callTranslateApi(String keyword, String targetLang) {
         String url = UriComponentsBuilder.fromHttpUrl(TRANSLATE_URL)
                 .queryParam("q", keyword)
