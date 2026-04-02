@@ -70,4 +70,5 @@ public class YoutubeController {
         YoutubeTranscriptDto result = youtubeTranscriptService.getTranscript(youtubeVideoId);
         return ApiResponse.ok(result);
     }
+
 }
