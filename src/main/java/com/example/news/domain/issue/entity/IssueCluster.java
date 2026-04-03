@@ -29,11 +29,16 @@ public class IssueCluster extends BaseEntity {
 
     private String normalizedKeyword;
 
+    private String clusterTitle;
+
+    @Column(columnDefinition = "TEXT")
+    private String clusterSummary;
+
+    private String clusterLabel;
+
     private LocalDate periodStartDate;
 
     private LocalDate periodEndDate;
-
-    private String clusterLabel;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

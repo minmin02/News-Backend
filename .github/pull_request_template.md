@@ -1,4 +1,4 @@
-# <타입>/{Bounded Context명}/{간단작업명}
+    # <타입>/{Bounded Context명}/{간단작업명}
 <!-- ex) Feat/identity/로그인 API 구현 -->
 
 ## 🎯 작업 내용

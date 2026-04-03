@@ -33,6 +33,10 @@ youtube:
 ai-pipeline:
   base-url: ${AI_PIPELINE_URL:http://localhost:8000}
 
+google:
+  translate:
+    api-key: ${GOOGLE_TRANSLATE_API_KEY}
+
 server:
   port: 8080
 
