@@ -5,11 +5,10 @@ import com.example.news.domain.content.dto.YoutubeVideoDto;
 import com.example.news.domain.content.entity.Keyword;
 import com.example.news.domain.content.entity.YoutubeVideo;
 import com.example.news.domain.content.entity.YoutubeVideoKeyword;
-import com.example.news.domain.content.enums.YoutubeErrorCode;
+import com.example.news.domain.content.exception.YoutubeApiException;
 import com.example.news.domain.content.repository.KeywordRepository;
 import com.example.news.domain.content.repository.YoutubeVideoKeywordRepository;
 import com.example.news.domain.content.repository.YoutubeVideoRepository;
-import com.example.news.global.exception.CustomException;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.*;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -65,7 +67,62 @@ public class YoutubeSearchService {
                     .map(item -> item.getId().getVideoId())
                     .collect(Collectors.toList());
         } catch (IOException e) {
-            throw new CustomException(YoutubeErrorCode.YOUTUBE_API_ERROR, e.getMessage(), e);
+            throw new YoutubeApiException(e.getMessage(), e);
+        }
+    }
+
+    // 국가별 비교용 검색 (번역된 키워드 + 지역/언어 + 날짜 범위)
+    @Transactional
+    public List<YoutubeVideoDto.VideoCard> searchByRegion(
+            String keyword,
+            String regionCode,
+            String relevanceLanguage,
+            LocalDate startDate,
+            LocalDate endDate) {
+
+        List<String> videoIds = searchVideoIdsByRegion(keyword, regionCode, relevanceLanguage, startDate, endDate);
+        if (videoIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<YoutubeVideo> videos = fetchAndSaveVideos(videoIds);
+        linkKeywordToVideos(keyword, videos);
+
+        return videos.stream()
+                .map(YoutubeConverter::toVideoCard)
+                .collect(Collectors.toList());
+    }
+
+    private List<String> searchVideoIdsByRegion(
+            String keyword,
+            String regionCode,
+            String relevanceLanguage,
+            LocalDate startDate,
+            LocalDate endDate) {
+        try {
+            YouTube.Search.List searchRequest = youtubeClient.search().list(List.of("snippet"));
+            searchRequest.setKey(apiKey);
+            searchRequest.setQ(keyword);
+            searchRequest.setType(List.of("video"));
+            searchRequest.setMaxResults(20L);
+            searchRequest.setRegionCode(regionCode);
+            searchRequest.setRelevanceLanguage(relevanceLanguage);
+
+            if (startDate != null) {
+                searchRequest.setPublishedAfter(
+                        startDate.atStartOfDay().toInstant(ZoneOffset.UTC).toString());
+            }
+            if (endDate != null) {
+                searchRequest.setPublishedBefore(
+                        endDate.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC).toString());
+            }
+
+            SearchListResponse response = searchRequest.execute();
+            return response.getItems().stream()
+                    .map(item -> item.getId().getVideoId())
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            throw new YoutubeApiException(e.getMessage(), e);
         }
     }
 
@@ -96,7 +153,7 @@ public class YoutubeSearchService {
                 result.add(saved);
             }
         } catch (IOException e) {
-            throw new CustomException(YoutubeErrorCode.YOUTUBE_API_ERROR, e.getMessage(), e);
+            throw new YoutubeApiException(e.getMessage(), e);
         }
 
         return result;

@@ -4,10 +4,10 @@ import com.example.news.domain.content.converter.YoutubeConverter;
 import com.example.news.domain.content.dto.YoutubeCommentDto;
 import com.example.news.domain.content.entity.YoutubeComment;
 import com.example.news.domain.content.entity.YoutubeVideo;
-import com.example.news.domain.content.enums.YoutubeErrorCode;
+import com.example.news.domain.content.exception.VideoNotFoundException;
+import com.example.news.domain.content.exception.YoutubeApiException;
 import com.example.news.domain.content.repository.YoutubeCommentRepository;
 import com.example.news.domain.content.repository.YoutubeVideoRepository;
-import com.example.news.global.exception.CustomException;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.*;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +35,7 @@ public class YoutubeCommentService {
     @Transactional
     public List<YoutubeCommentDto> getComments(String youtubeVideoId) {
         YoutubeVideo video = youtubeVideoRepository.findByYoutubeVideoId(youtubeVideoId)
-                .orElseThrow(() -> new CustomException(YoutubeErrorCode.VIDEO_NOT_FOUND));
+                .orElseThrow(VideoNotFoundException::new);
 
         List<YoutubeComment> existingComments =
                 youtubeCommentRepository.findByYoutubeVideoOrderByLikeCountDesc(video);
@@ -75,7 +75,7 @@ public class YoutubeCommentService {
                     .collect(Collectors.toList());
 
         } catch (IOException e) {
-            throw new CustomException(YoutubeErrorCode.YOUTUBE_API_ERROR, e.getMessage(), e);
+            throw new YoutubeApiException(e.getMessage(), e);
         }
     }
 
