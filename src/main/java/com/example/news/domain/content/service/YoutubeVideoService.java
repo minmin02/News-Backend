@@ -3,9 +3,9 @@ package com.example.news.domain.content.service;
 import com.example.news.domain.content.converter.YoutubeConverter;
 import com.example.news.domain.content.dto.YoutubeVideoDto;
 import com.example.news.domain.content.entity.YoutubeVideo;
-import com.example.news.domain.content.enums.YoutubeErrorCode;
+import com.example.news.domain.content.exception.VideoNotFoundException;
+import com.example.news.domain.content.exception.YoutubeApiException;
 import com.example.news.domain.content.repository.YoutubeVideoRepository;
-import com.example.news.global.exception.CustomException;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.VideoListResponse;
 import lombok.RequiredArgsConstructor;
@@ -51,13 +51,13 @@ public class YoutubeVideoService {
 
             VideoListResponse response = request.execute();
             if (response.getItems() == null || response.getItems().isEmpty()) {
-                throw new CustomException(YoutubeErrorCode.VIDEO_NOT_FOUND);
+                throw new VideoNotFoundException();
             }
 
             // YoutubeSearchService.saveVideo() 재사용해서 저장 후 반환
             return youtubeSearchService.saveVideo(response.getItems().get(0));
         } catch (IOException e) {
-            throw new CustomException(YoutubeErrorCode.YOUTUBE_API_ERROR, e.getMessage(), e);
+            throw new YoutubeApiException(e.getMessage(), e);
         }
     }
 }

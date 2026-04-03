@@ -20,9 +20,9 @@ public class IssueController {
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<IssueSearchResponseDto>> search(
             @RequestParam String searchKeyword, // 파라미터로 한국어 키워드
-            @RequestParam String countries, // 파라미티로 나라 (쉼표로 구분함) (ex, KR, JP, US)
-            @RequestParam(defaultValue = "30d") String period) { // 파라미터로 기한 (default 30일)
-        return ResponseEntity.ok(ApiResponse.ok(issueService.search(searchKeyword, countries, period)));
+            @RequestParam String countries, // 파라미터로 나라 (쉼표로 구분함) (ex, KR, JP, US)
+            @RequestParam(defaultValue = "30") int days) { // 파라미터로 기한 일수 (default 30일)
+        return ResponseEntity.ok(ApiResponse.ok(issueService.search(searchKeyword, countries, days)));
     }
 
     // 국가별 대표 영상 비교 결과 조회 (선택한 영상 ID 직접 지정)

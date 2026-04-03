@@ -9,7 +9,8 @@ import lombok.Getter;
 public enum IssueErrorCode implements ResponseCode {
 
     TRANSLATION_FAILED("IS001", "keyword translation failed"),
-    UNSUPPORTED_COUNTRY("IS002", "unsupported country code");
+    UNSUPPORTED_COUNTRY("IS002", "unsupported country code"),
+    VIDEO_NOT_FOUND("IS003", "youtube video not found");
 
     private final String statusCode;
     private final String message;

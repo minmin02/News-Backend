@@ -5,6 +5,7 @@ import com.example.news.domain.content.entity.YoutubeVideo;
 import com.example.news.domain.issue.dto.*;
 import com.example.news.domain.issue.entity.IssueCluster;
 import com.example.news.domain.issue.entity.IssueClusterItem;
+import com.example.news.domain.issue.enums.CountryCode;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -13,23 +14,9 @@ import java.util.Map;
 
 public class IssueConverter {
 
-    private static final Map<String, String> COUNTRY_NAMES = Map.of(
-            "KR", "한국", "US", "미국", "CN", "중국", "JP", "일본"
-    );
-
-    private static final Map<String, String> LANGUAGE_LABELS = Map.of(
-            "KR", "한국어", "US", "영어", "CN", "중국어", "JP", "일본어"
-    );
-
-    private static final Map<String, String> COUNTRY_TO_LANG = Map.of(
-            "KR", "ko", "US", "en", "CN", "zh-CN", "JP", "ja"
-    );
-
     // 국가코드 => youtube api용 언어코드 반환 ex KR => ko
     public static String getLanguageCode(String countryCode) {
-        String lang = COUNTRY_TO_LANG.get(countryCode);
-        if (lang == null) throw new IllegalArgumentException("Unsupported country code: " + countryCode);
-        return lang;
+        return CountryCode.of(countryCode).getLanguageCode();
     }
 
     // KR, JP, US => 리스트로 변환
@@ -37,9 +24,8 @@ public class IssueConverter {
         return Arrays.asList(countries.split(","));
     }
 
-    // 7d => 오늘 ~ 7일로 변환
-    public static LocalDate[] parsePeriod(String period) {
-        int days = "7d".equals(period) ? 7 : 30;
+    // days => 오늘 ~ N일로 변환
+    public static LocalDate[] parsePeriod(int days) {
         LocalDate end = LocalDate.now();
         return new LocalDate[]{end.minusDays(days), end};
     }
@@ -80,6 +66,8 @@ public class IssueConverter {
             YoutubeVideo video,
             BiasAnalysisResult bias) {
 
+        CountryCode country = CountryCode.of(countryCode);
+
         IssueComparisonResponseDto.ComparisonSummary comparison =
                 IssueComparisonResponseDto.ComparisonSummary.builder()
                         .perspectiveSummary(bias != null ? bias.getPerspectiveSummary() : null)
@@ -90,8 +78,8 @@ public class IssueConverter {
 
         return IssueComparisonResponseDto.CountryResult.builder()
                 .countryCode(countryCode)
-                .countryName(COUNTRY_NAMES.getOrDefault(countryCode, countryCode))
-                .languageLabel(LANGUAGE_LABELS.getOrDefault(countryCode, countryCode))
+                .countryName(country.getCountryName())
+                .languageLabel(country.getLanguageLabel())
                 .videoId(video.getId())
                 .youtubeVideoId(video.getYoutubeVideoId())
                 .title(video.getTitle())

@@ -5,11 +5,10 @@ import com.example.news.domain.content.dto.YoutubeVideoDto;
 import com.example.news.domain.content.entity.Keyword;
 import com.example.news.domain.content.entity.YoutubeVideo;
 import com.example.news.domain.content.entity.YoutubeVideoKeyword;
-import com.example.news.domain.content.enums.YoutubeErrorCode;
+import com.example.news.domain.content.exception.YoutubeApiException;
 import com.example.news.domain.content.repository.KeywordRepository;
 import com.example.news.domain.content.repository.YoutubeVideoKeywordRepository;
 import com.example.news.domain.content.repository.YoutubeVideoRepository;
-import com.example.news.global.exception.CustomException;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.*;
 import lombok.RequiredArgsConstructor;
@@ -68,7 +67,7 @@ public class YoutubeSearchService {
                     .map(item -> item.getId().getVideoId())
                     .collect(Collectors.toList());
         } catch (IOException e) {
-            throw new CustomException(YoutubeErrorCode.YOUTUBE_API_ERROR, e.getMessage(), e);
+            throw new YoutubeApiException(e.getMessage(), e);
         }
     }
 
@@ -123,7 +122,7 @@ public class YoutubeSearchService {
                     .map(item -> item.getId().getVideoId())
                     .collect(Collectors.toList());
         } catch (IOException e) {
-            throw new CustomException(YoutubeErrorCode.YOUTUBE_API_ERROR, e.getMessage(), e);
+            throw new YoutubeApiException(e.getMessage(), e);
         }
     }
 
@@ -154,7 +153,7 @@ public class YoutubeSearchService {
                 result.add(saved);
             }
         } catch (IOException e) {
-            throw new CustomException(YoutubeErrorCode.YOUTUBE_API_ERROR, e.getMessage(), e);
+            throw new YoutubeApiException(e.getMessage(), e);
         }
 
         return result;

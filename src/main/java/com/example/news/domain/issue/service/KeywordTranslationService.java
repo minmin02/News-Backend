@@ -1,5 +1,6 @@
 package com.example.news.domain.issue.service;
 
+import com.example.news.domain.issue.enums.CountryCode;
 import com.example.news.domain.issue.enums.IssueErrorCode;
 import com.example.news.global.exception.CustomException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -14,19 +15,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 @Service
 @RequiredArgsConstructor
 public class KeywordTranslationService {
 
     private static final String TRANSLATE_URL = "https://translation.googleapis.com/language/translate/v2";
-
-    // 국가코드에서 언어코드로 매핑
-    private static final Map<String, String> COUNTRY_TO_LANG = Map.of(
-            "KR", "ko",
-            "US", "en",
-            "CN", "zh-CN",
-            "JP", "ja"
-    );
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
@@ -40,10 +34,7 @@ public class KeywordTranslationService {
         Map<String, String> result = new HashMap<>();
 
         for (String countryCode : countryCodes) {
-            String lang = COUNTRY_TO_LANG.get(countryCode);
-            if (lang == null) {
-                throw new CustomException(IssueErrorCode.UNSUPPORTED_COUNTRY, "countryCode: " + countryCode);
-            }
+            String lang = CountryCode.of(countryCode).getLanguageCode();
 
             // KR(한국어)는 번역 불필요
             if ("ko".equals(lang)) {

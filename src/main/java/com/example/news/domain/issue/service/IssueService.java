@@ -11,13 +11,13 @@ import com.example.news.domain.issue.dto.*;
 import com.example.news.domain.issue.entity.IssueCluster;
 import com.example.news.domain.issue.entity.IssueClusterItem;
 import com.example.news.domain.issue.enums.ClusterStatus;
+import com.example.news.domain.issue.enums.IssueErrorCode;
 import com.example.news.domain.issue.repository.IssueClusterItemRepository;
 import com.example.news.domain.issue.repository.IssueClusterRepository;
+import com.example.news.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -38,9 +38,9 @@ public class IssueService {
 
     // 국가별 이슈 영상 검색
     @Transactional
-    public IssueSearchResponseDto search(String searchKeyword, String countries, String period) {
+    public IssueSearchResponseDto search(String searchKeyword, String countries, int days) {
         List<String> countryList = IssueConverter.parseCountries(countries);
-        LocalDate[] dates = IssueConverter.parsePeriod(period);
+        LocalDate[] dates = IssueConverter.parsePeriod(days);
         LocalDate startDate = dates[0];
         LocalDate endDate = dates[1];
 
@@ -89,8 +89,7 @@ public class IssueService {
             String youtubeVideoId = entry.getValue();
 
             YoutubeVideo video = youtubeVideoRepository.findByYoutubeVideoId(youtubeVideoId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                            "YouTube 영상 ID를 찾을 수 없습니다: " + youtubeVideoId));
+                    .orElseThrow(() -> new CustomException(IssueErrorCode.VIDEO_NOT_FOUND));
 
             BiasAnalysisResult bias = biasAnalysisResultRepository
                     .findByTargetIdAndTargetType(video.getId(), TargetType.YOUTUBE_VIDEO)
