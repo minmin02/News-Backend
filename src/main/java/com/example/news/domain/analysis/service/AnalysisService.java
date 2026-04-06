@@ -73,9 +73,10 @@ public class AnalysisService {
     public AnalysisJob createAnalysisJobFromRawText(YoutubeTranscript transcript) {
 
         Long transcriptId = transcript.getId();
+        Long youtubeVideoId = transcript.getYoutubeVideo().getId();
 
         AnalysisJob job = AnalysisJob.builder()
-                .targetId(transcriptId)
+                .targetId(youtubeVideoId)
                 .targetType(TargetType.YOUTUBE_VIDEO)
                 .jobType(JobType.VIDEO_BIAS_ANALYSIS)
                 .status(JobStatus.PENDING)

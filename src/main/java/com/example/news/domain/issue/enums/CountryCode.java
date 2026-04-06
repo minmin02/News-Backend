@@ -1,6 +1,7 @@
 package com.example.news.domain.issue.enums;
 
-import com.example.news.global.exception.CustomException;
+import com.example.news.domain.issue.exception.IssueErrorCode;
+import com.example.news.domain.issue.exception.IssueException;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -22,6 +23,6 @@ public enum CountryCode {
         return Arrays.stream(values())
                 .filter(c -> c.name().equals(code))
                 .findFirst()
-                .orElseThrow(() -> new CustomException(IssueErrorCode.UNSUPPORTED_COUNTRY, "countryCode: " + code));
+                .orElseThrow(() -> new IssueException(IssueErrorCode.UNSUPPORTED_COUNTRY, "countryCode: " + code));
     }
 }
