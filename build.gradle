@@ -18,6 +18,10 @@ configurations {
 	compileOnly {
 		extendsFrom annotationProcessor
 	}
+	all {
+		// spring-jcl과 commons-logging 중복 로딩 경고 제거
+		exclude group: 'commons-logging', module: 'commons-logging'
+	}
 }
 
 repositories {
@@ -45,6 +49,9 @@ dependencies {
 	implementation 'com.google.apis:google-api-services-youtube:v3-rev20230816-2.0.0'
 	implementation 'com.google.api-client:google-api-client:2.2.0'
 	implementation 'com.google.http-client:google-http-client-jackson2:1.43.3'
+	// macOS Netty DNS native 로딩 경고 완화 (Intel/Apple Silicon 모두 포함)
+	runtimeOnly 'io.netty:netty-resolver-dns-native-macos:4.1.131.Final:osx-x86_64'
+	runtimeOnly 'io.netty:netty-resolver-dns-native-macos:4.1.131.Final:osx-aarch_64'
 }
 
 tasks.named('test') {

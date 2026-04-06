@@ -7,8 +7,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 @RestController
 @RequestMapping("/api/v1/issues")
 @RequiredArgsConstructor
@@ -25,12 +23,12 @@ public class IssueController {
         return ResponseEntity.ok(ApiResponse.ok(issueService.search(searchKeyword, countries, days)));
     }
 
-    // 국가별 대표 영상 비교 결과 조회 (선택한 영상 ID 직접 지정)
-    // 예: ?KR=APFcTstK_AM&US=dQw4w9WgXcQ
+    // 국가별 대표 영상 비교 결과 조회 (저장된 비교 결과 조회)
+    // 예: /api/v1/issues/comparison?issueClusterId=1
     @GetMapping("/comparison")
     public ResponseEntity<ApiResponse<IssueComparisonResponseDto>> comparison(
-            @RequestParam Map<String, String> videoIds) {
-        return ResponseEntity.ok(ApiResponse.ok(issueService.comparison(videoIds)));
+            @RequestParam Long issueClusterId) {
+        return ResponseEntity.ok(ApiResponse.ok(issueService.comparison(issueClusterId)));
     }
 
 

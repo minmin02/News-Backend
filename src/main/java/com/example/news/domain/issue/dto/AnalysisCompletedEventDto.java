@@ -19,7 +19,7 @@ public class AnalysisCompletedEventDto {
     private Long biasAnalysisResultId;
     private String status;
     private Double overallBiasScore;
-    private List<String> keywords;
+    private List<String> analysisKeywords;
     private String summaryText;
     private Map<String, Double> biasTypeScores;
 }

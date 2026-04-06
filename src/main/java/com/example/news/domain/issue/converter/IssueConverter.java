@@ -3,6 +3,7 @@ package com.example.news.domain.issue.converter;
 import com.example.news.domain.analysis.entity.BiasAnalysisResult;
 import com.example.news.domain.content.entity.YoutubeVideo;
 import com.example.news.domain.issue.dto.*;
+import com.example.news.domain.issue.entity.ComparisonCountryItem;
 import com.example.news.domain.issue.entity.IssueCluster;
 import com.example.news.domain.issue.entity.IssueClusterItem;
 import com.example.news.domain.issue.enums.CountryCode;
@@ -49,6 +50,7 @@ public class IssueConverter {
                                                           List<IssueClusterItem> items,
                                                           Map<Long, YoutubeVideo> videoMap) {
         return IssueSearchResponseDto.builder()
+                .issueClusterId(cluster.getId())
                 .searchKeyword(cluster.getSearchKeyword())
                 .clusterTitle(cluster.getClusterTitle())
                 .clusterSummary(cluster.getClusterSummary())
@@ -62,17 +64,26 @@ public class IssueConverter {
     }
 
     public static IssueComparisonResponseDto.CountryResult toComparisonCountryResult(
-            String countryCode,
+            ComparisonCountryItem countryItem,
             YoutubeVideo video,
-            BiasAnalysisResult bias) {
+            BiasAnalysisResult analysisResult) {
 
+        String countryCode = countryItem.getCountryCode();
         CountryCode country = CountryCode.of(countryCode);
+
+        String summaryText = countryItem.getSummaryText();
+        String toneLabel = analysisResult != null ? analysisResult.getToneLabel() : null;
+        Double overallBiasScore = analysisResult != null && analysisResult.getOverallBiasScore() != null
+                ? analysisResult.getOverallBiasScore()
+                : countryItem.getBiasScore();
+        Double opinionScore = analysisResult != null ? analysisResult.getOpinionScore() : null;
+        Double emotionScore = analysisResult != null ? analysisResult.getEmotionScore() : null;
 
         IssueComparisonResponseDto.ComparisonSummary comparison =
                 IssueComparisonResponseDto.ComparisonSummary.builder()
-                        .perspectiveSummary(bias != null ? bias.getPerspectiveSummary() : null)
-                        .toneLabel(bias != null ? bias.getToneLabel() : null)
-                        .representativeChannelName(video.getChannelName())
+                        .perspectiveSummary(summaryText)
+                        .toneLabel(toneLabel)
+                        .representativeChannelName(video != null ? video.getChannelName() : null)
                         .coreKeywords(List.of())
                         .build();
 
@@ -80,19 +91,19 @@ public class IssueConverter {
                 .countryCode(countryCode)
                 .countryName(country.getCountryName())
                 .languageLabel(country.getLanguageLabel())
-                .videoId(video.getId())
-                .youtubeVideoId(video.getYoutubeVideoId())
-                .title(video.getTitle())
-                .channelName(video.getChannelName())
-                .thumbnailUrl(video.getThumbnailUrl())
-                .originalUrl(video.getOriginalUrl())
-                .publishedAt(video.getPublishedAt())
-                .overallBiasScore(bias != null ? bias.getOverallBiasScore() : null)
-                .opinionScore(bias != null ? bias.getOpinionScore() : null)
-                .emotionScore(bias != null ? bias.getEmotionScore() : null)
-                .toneLabel(bias != null ? bias.getToneLabel() : null)
-                .perspectiveSummary(bias != null ? bias.getPerspectiveSummary() : null)
-                .evidenceSummary(bias != null ? bias.getEvidenceSummary() : null)
+                .videoId(video != null ? video.getId() : countryItem.getRepresentativeVideoId())
+                .youtubeVideoId(video != null ? video.getYoutubeVideoId() : null)
+                .title(countryItem.getTitle() != null ? countryItem.getTitle() : (video != null ? video.getTitle() : null))
+                .channelName(video != null ? video.getChannelName() : null)
+                .thumbnailUrl(video != null ? video.getThumbnailUrl() : null)
+                .originalUrl(video != null ? video.getOriginalUrl() : null)
+                .publishedAt(video != null ? video.getPublishedAt() : null)
+                .overallBiasScore(overallBiasScore)
+                .opinionScore(opinionScore)
+                .emotionScore(emotionScore)
+                .toneLabel(toneLabel)
+                .perspectiveSummary(summaryText)
+                .evidenceSummary(null)
                 .comparison(comparison)
                 .build();
     }

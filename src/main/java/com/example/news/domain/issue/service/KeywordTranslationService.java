@@ -1,8 +1,8 @@
 package com.example.news.domain.issue.service;
 
 import com.example.news.domain.issue.enums.CountryCode;
-import com.example.news.domain.issue.enums.IssueErrorCode;
-import com.example.news.global.exception.CustomException;
+import com.example.news.domain.issue.exception.IssueErrorCode;
+import com.example.news.domain.issue.exception.IssueException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -67,7 +67,7 @@ public class KeywordTranslationService {
                     .path("translatedText")
                     .asText();
         } catch (Exception e) {
-            throw new CustomException(IssueErrorCode.TRANSLATION_FAILED, e.getMessage(), e);
+            throw new IssueException(IssueErrorCode.TRANSLATION_FAILED, e.getMessage(), e);
         }
     }
 }

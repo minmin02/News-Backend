@@ -7,6 +7,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum ClusterStatus {
     PENDING("pending"),
+    PROCESSING("processing"),
     COMPLETED("completed"),
     FAIL("fail");
 
