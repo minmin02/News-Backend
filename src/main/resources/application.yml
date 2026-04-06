@@ -33,7 +33,15 @@ youtube:
 ai-pipeline:
   base-url: ${AI_PIPELINE_URL:http://localhost:8000}
 
+kakao:
+  client-id: ${KAKAO_CLIENT_ID}
+  client-secret: ${KAKAO_CLIENT_SECRET}
+  redirect-uri: ${KAKAO_REDIRECT_URI}
+
 google:
+  client-id: ${GOOGLE_CLIENT_ID}
+  client-secret: ${GOOGLE_CLIENT_SECRET}
+  redirect-uri: ${GOOGLE_REDIRECT_URI}
   translate:
     api-key: ${GOOGLE_TRANSLATE_API_KEY}
 

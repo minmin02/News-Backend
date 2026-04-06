@@ -61,7 +61,7 @@ class AnalysisControllerTest {
     @Test
     void analyze_returns200_andJobIdStatus() throws Exception {
         // given
-        ContentPreparedEventDto event = new ContentPreparedEventDto(1L, 10L, "테스트 제목", "KR", "ko", List.of());
+        ContentPreparedEventDto event = new ContentPreparedEventDto(1L, 10L, "테스트 제목", "KR", "ko");
 
         // createAnalysisJob()은 Python 호출 + 저장까지 동기 처리 후 반환 → 200 OK
         AnalysisJob job = AnalysisJob.builder()
@@ -85,7 +85,7 @@ class AnalysisControllerTest {
     @Test
     void analyze_returns200_whenJobFailed() throws Exception {
         // given — Python 호출 실패 시에도 job은 FAILED 상태로 정상 반환 (예외 throw 아님)
-        ContentPreparedEventDto event = new ContentPreparedEventDto(1L, 10L, "테스트 제목", "KR", "ko", List.of());
+        ContentPreparedEventDto event = new ContentPreparedEventDto(1L, 10L, "테스트 제목", "KR", "ko");
 
         AnalysisJob job = AnalysisJob.builder()
                 .targetId(10L)
