@@ -11,6 +11,7 @@ import java.util.List;
 @Builder
 public class IssueSearchResponseDto {
 
+    private Long issueClusterId;
     private String searchKeyword;
     private String clusterTitle;
     private String clusterSummary;

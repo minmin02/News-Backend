@@ -8,19 +8,22 @@ import com.example.news.domain.content.repository.YoutubeVideoRepository;
 import com.example.news.domain.content.service.YoutubeSearchService;
 import com.example.news.domain.issue.converter.IssueConverter;
 import com.example.news.domain.issue.dto.*;
+import com.example.news.domain.issue.entity.ComparisonCountryItem;
+import com.example.news.domain.issue.entity.ComparisonResult;
 import com.example.news.domain.issue.entity.IssueCluster;
 import com.example.news.domain.issue.entity.IssueClusterItem;
 import com.example.news.domain.issue.enums.ClusterStatus;
-import com.example.news.domain.issue.enums.IssueErrorCode;
+import com.example.news.domain.issue.exception.IssueErrorCode;
+import com.example.news.domain.issue.exception.IssueException;
+import com.example.news.domain.issue.repository.ComparisonCountryItemRepository;
+import com.example.news.domain.issue.repository.ComparisonResultRepository;
 import com.example.news.domain.issue.repository.IssueClusterItemRepository;
 import com.example.news.domain.issue.repository.IssueClusterRepository;
-import com.example.news.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -34,6 +37,8 @@ public class IssueService {
     private final YoutubeVideoRepository youtubeVideoRepository;
     private final IssueClusterRepository issueClusterRepository;
     private final IssueClusterItemRepository issueClusterItemRepository;
+    private final ComparisonResultRepository comparisonResultRepository;
+    private final ComparisonCountryItemRepository comparisonCountryItemRepository;
     private final BiasAnalysisResultRepository biasAnalysisResultRepository;
 
     // 국가별 이슈 영상 검색
@@ -77,26 +82,53 @@ public class IssueService {
         return IssueConverter.toSearchResponse(cluster, clusterItems, videoMap);
     }
 
-    // 국가별 대표 영상 비교 결과 조회 (선택한 영상 ID 직접 지정)
+    // 국가별 대표 영상 비교 결과 조회 (저장된 비교 결과 조회)
     @Transactional(readOnly = true)
-    public IssueComparisonResponseDto comparison(Map<String, String> videoIds) {
-        List<IssueComparisonResponseDto.CountryResult> results = new ArrayList<>();
+    public IssueComparisonResponseDto comparison(Long issueClusterId) {
+        issueClusterRepository.findById(issueClusterId)
+                .orElseThrow(() -> new IssueException(IssueErrorCode.ISSUE_CLUSTER_NOT_FOUND));
 
-        // Map<국가 코드, youtubeVideoId>를 받아서 각 영상을 db에서 조회
-        // 이때 bias_analysis_result 가 없으면 null 반환 (지금은 아마 다 null 반환해야 정상임)
-        for (Map.Entry<String, String> entry : videoIds.entrySet()) {
-            String countryCode = entry.getKey();
-            String youtubeVideoId = entry.getValue();
+        ComparisonResult comparisonResult = comparisonResultRepository
+                .findTopByIssueClusterIdOrderByCreatedAtDesc(issueClusterId)
+                .orElseThrow(() -> new IssueException(IssueErrorCode.COMPARISON_RESULT_NOT_FOUND));
 
-            YoutubeVideo video = youtubeVideoRepository.findByYoutubeVideoId(youtubeVideoId)
-                    .orElseThrow(() -> new CustomException(IssueErrorCode.VIDEO_NOT_FOUND));
+        List<ComparisonCountryItem> countryItems = comparisonCountryItemRepository
+                .findByComparisonResultId(comparisonResult.getId());
 
-            BiasAnalysisResult bias = biasAnalysisResultRepository
-                    .findByTargetIdAndTargetType(video.getId(), TargetType.YOUTUBE_VIDEO)
-                    .orElse(null);
-
-            results.add(IssueConverter.toComparisonCountryResult(countryCode, video, bias));
+        if (countryItems.isEmpty()) {
+            return IssueComparisonResponseDto.builder()
+                    .countries(List.of())
+                    .build();
         }
+
+        List<Long> videoIds = countryItems.stream()
+                .map(ComparisonCountryItem::getRepresentativeVideoId)
+                .filter(java.util.Objects::nonNull)
+                .toList();
+
+        Map<Long, YoutubeVideo> videoMap = youtubeVideoRepository.findAllById(videoIds).stream()
+                .collect(Collectors.toMap(YoutubeVideo::getId, v -> v));
+
+        Map<Long, BiasAnalysisResult> analysisResultMap = biasAnalysisResultRepository
+                .findByTargetTypeAndTargetIdIn(TargetType.YOUTUBE_VIDEO, videoIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        BiasAnalysisResult::getTargetId,
+                        r -> r,
+                        (a, b) -> {
+                            if (a.getCreatedAt() == null) return b;
+                            if (b.getCreatedAt() == null) return a;
+                            return a.getCreatedAt().isAfter(b.getCreatedAt()) ? a : b;
+                        }
+                ));
+
+        List<IssueComparisonResponseDto.CountryResult> results = countryItems.stream()
+                .map(item -> IssueConverter.toComparisonCountryResult(
+                        item,
+                        videoMap.get(item.getRepresentativeVideoId()),
+                        analysisResultMap.get(item.getRepresentativeVideoId())
+                ))
+                .toList();
 
         return IssueComparisonResponseDto.builder()
                 .countries(results)

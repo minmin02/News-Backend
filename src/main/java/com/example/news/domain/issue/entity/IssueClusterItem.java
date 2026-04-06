@@ -10,7 +10,19 @@ import lombok.*;
  * YoutubeVideo는 BC 간 직접 참조 금지 원칙에 따라 ID(youtubeVideoId)만 보관한다.
  */
 @Entity
-@Table(name = "issue_cluster_item")
+@Table(
+        name = "issue_cluster_item",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_issue_cluster_item_cluster_video",
+                        columnNames = {"issue_cluster_id", "youtube_video_id"}
+                )
+        },
+        indexes = {
+                @Index(name = "idx_issue_cluster_item_cluster_country", columnList = "issue_cluster_id,country_code")
+        }
+)
+
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -23,11 +35,13 @@ public class IssueClusterItem extends BaseEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "issue_cluster_id")
+    @JoinColumn(name = "issue_cluster_id", nullable = false)
     private IssueCluster issueCluster;
 
+    @Column(name = "youtube_video_id", nullable = false)
     private Long youtubeVideoId;
 
+    @Column(length = 10)
     private String countryCode;
 
     private Double similarityScore;
