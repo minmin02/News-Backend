@@ -1,8 +1,11 @@
 package com.example.news.domain.user.dto;
 
+import com.example.news.domain.user.entity.User;
 import com.example.news.global.jwt.dto.TokenDataDto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+
+import java.time.LocalDate;
 
 public class UserDto {
 
@@ -41,4 +44,33 @@ public class UserDto {
             );
         }
     }
+
+    public record ProfileResponseDto(
+            Long userId,
+            String email,
+            String name,
+            String nickname,
+            LocalDate birth,
+            String phone,
+            String profileImageKey
+    ) {
+        public static ProfileResponseDto from(User user) {
+            return new ProfileResponseDto(
+                    user.getUserId(),
+                    user.getEmail(),
+                    user.getName(),
+                    user.getNickname(),
+                    user.getBirth(),
+                    user.getPhone(),
+                    user.getProfileImageKey()
+            );
+        }
+    }
+
+    public record ProfileUpdateRequestDto(
+            String name,
+            String nickname,
+            LocalDate birth,
+            String phone
+    ) {}
 }
