@@ -11,6 +11,8 @@ import com.example.news.domain.content.enums.TranscriptSource;
 import com.google.api.services.youtube.model.*;
 import com.google.api.client.util.DateTime;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
@@ -105,7 +107,7 @@ public class YoutubeConverter {
                 .originalUrl("https://www.youtube.com/watch?v=" + videoId)
                 .channelId(snippet.getChannelId())
                 .channelName(snippet.getChannelTitle())
-                .title(snippet.getTitle())
+                .title(decodeTitle(snippet.getTitle()))
                 .description(snippet.getDescription())
                 .thumbnailUrl(extractThumbnailUrl(snippet))
                 .publishedAt(parseDateTime(snippet.getPublishedAt()))
@@ -124,6 +126,15 @@ public class YoutubeConverter {
                 .commentCount(statistics != null && statistics.getCommentCount() != null
                         ? statistics.getCommentCount().longValue() : null)
                 .build();
+    }
+
+    private static String decodeTitle(String title) {
+        if (title == null) return null;
+        try {
+            return URLDecoder.decode(title, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            return title;
+        }
     }
 
     private static String extractThumbnailUrl(VideoSnippet snippet) {

@@ -56,4 +56,8 @@ public class YoutubeVideo {
     private Long likeCount;
 
     private Long commentCount;
+
+    public void updateTitle(String title) {
+        this.title = title;
+    }
 }
