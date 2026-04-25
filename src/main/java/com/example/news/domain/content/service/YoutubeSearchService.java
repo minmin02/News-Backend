@@ -12,6 +12,7 @@ import com.example.news.domain.content.repository.YoutubeVideoRepository;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,8 +23,10 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class YoutubeSearchService {
@@ -33,6 +36,7 @@ public class YoutubeSearchService {
     private final YoutubeVideoRepository youtubeVideoRepository;
     private final KeywordRepository keywordRepository;
     private final YoutubeVideoKeywordRepository youtubeVideoKeywordRepository;
+    private final TitleTranslationService titleTranslationService;
 
     @Value("${youtube.api.key}")
     private String apiKey;
@@ -45,6 +49,7 @@ public class YoutubeSearchService {
         }
 
         List<YoutubeVideo> videos = fetchAndSaveVideos(videoIds);
+        translateTitlesIfNeeded(videos);
         linkKeywordToVideos(keyword, videos);
 
         return videos.stream()
@@ -65,6 +70,7 @@ public class YoutubeSearchService {
             SearchListResponse response = searchRequest.execute();
             return response.getItems().stream()
                     .map(item -> item.getId().getVideoId())
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toList());
         } catch (IOException e) {
             throw new YoutubeApiException(e.getMessage(), e);
@@ -86,6 +92,7 @@ public class YoutubeSearchService {
         }
 
         List<YoutubeVideo> videos = fetchAndSaveVideos(videoIds);
+        translateTitlesIfNeeded(videos);
         linkKeywordToVideos(keyword, videos);
 
         return videos.stream()
@@ -120,6 +127,7 @@ public class YoutubeSearchService {
             SearchListResponse response = searchRequest.execute();
             return response.getItems().stream()
                     .map(item -> item.getId().getVideoId())
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toList());
         } catch (IOException e) {
             throw new YoutubeApiException(e.getMessage(), e);
@@ -157,6 +165,17 @@ public class YoutubeSearchService {
         }
 
         return result;
+    }
+
+    // defaultLanguageCode가 한국어가 아닌 영상 제목만 번역해서 DB 업데이트
+    private void translateTitlesIfNeeded(List<YoutubeVideo> videos) {
+        for (YoutubeVideo video : videos) {
+            String lang = video.getDefaultLanguageCode();
+            if (lang != null && !lang.startsWith("ko")) {
+                String translated = titleTranslationService.translateToKorean(video.getTitle());
+                video.updateTitle(translated);
+            }
+        }
     }
 
     // 영상 단건 저장

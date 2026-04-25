@@ -15,7 +15,8 @@ public enum UserErrorCode implements ResponseCode {
     KAKAO_AUTH_FAILED("U006", "카카오 인증에 실패했습니다"),
     KAKAO_USER_INFO_FAILED("U007", "카카오 사용자 정보 조회에 실패했습니다"),
     GOOGLE_AUTH_FAILED("U008", "구글 인증에 실패했습니다"),
-    GOOGLE_USER_INFO_FAILED("U009", "구글 사용자 정보 조회에 실패했습니다");
+    GOOGLE_USER_INFO_FAILED("U009", "구글 사용자 정보 조회에 실패했습니다"),
+    ALREADY_WITHDRAWN("U010", "이미 탈퇴한 계정입니다");
     private final String statusCode;
     private final String message;
 }

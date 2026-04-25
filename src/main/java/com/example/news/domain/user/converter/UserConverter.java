@@ -12,4 +12,8 @@ public class UserConverter {
                 .password(passwordEncoder.encode(request.password()))
                 .build();
     }
+
+    public static UserDto.ProfileResponseDto toProfileResponseDto(User user) {
+        return UserDto.ProfileResponseDto.from(user);
+    }
 }

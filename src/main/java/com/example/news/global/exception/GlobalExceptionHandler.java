@@ -116,7 +116,7 @@ public class GlobalExceptionHandler {
         if (e instanceof CustomException) {
             return handleCustomException((CustomException) e);
         }
-        log.warn("Unhandled runtime exception occurred: {}", e.getMessage());
+        log.warn("Unhandled runtime exception occurred: {}", e.getMessage(), e);
         return ApiResponse.error(CommonResponseCode.BAD_REQUEST_ERROR, e.getMessage());
     }
 
