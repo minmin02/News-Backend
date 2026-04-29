@@ -1,7 +1,7 @@
 package com.example.news.domain.analysis.service;
 
-import com.example.news.domain.analysis.dto.AnalyzeRawTextRequestDto;
 import com.example.news.domain.analysis.dto.BiasAnalysisResultDto;
+import com.example.news.domain.analysis.dto.SentenceInputDto;
 import com.example.news.domain.analysis.entity.AnalysisJob;
 import com.example.news.domain.content.entity.YoutubeTranscript;
 import com.example.news.domain.analysis.entity.BiasAnalysisKeyword;
@@ -29,11 +29,9 @@ import com.example.news.domain.analysis.repository.HighlightSpanRepository;
 import com.example.news.domain.analysis.repository.SentenceBiasLabelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.HashMap;
 import java.util.List;
@@ -53,20 +51,13 @@ public class AnalysisService {
     private final BiasEvidenceRepository biasEvidenceRepository;
     private final HighlightResultRepository highlightResultRepository;
     private final HighlightSpanRepository highlightSpanRepository;
-    private final WebClient webClient;
+    private final PythonAnalysisClient pythonAnalysisClient;
     private final ApplicationEventPublisher eventPublisher;
-
-    @Value("${python.base-url}")
-    private String pythonBaseUrl;
 
     /**
      * transcript 원문 텍스트를 Python /analyze/raw로 전달하여 분석 작업을 생성하고 실행한다.
      * Python이 문장 분리를 수행하며, 응답의 sentences를 ContentSentence로 저장한다.
      *
-     * @param transcriptId YoutubeTranscript DB PK
-     * @param title        영상 제목 (headline-body gap 분석에 사용)
-     * @param language     언어 코드 (ko, en 등)
-     * @param rawText      transcript 원문 텍스트
      * @return 생성된 AnalysisJob
      */
     @Transactional
@@ -90,28 +81,20 @@ public class AnalysisService {
             // 1. RUNNING 전이
             savedJob.start();
 
-            // 2. Python /analyze/raw 호출
-            AnalyzeRawTextRequestDto request = new AnalyzeRawTextRequestDto(
-                    transcriptId,
-                    transcript.getYoutubeVideo().getTitle(),
-                    transcript.getLanguageCode(),
-                    transcript.getTranscriptText(),
-                    "YOUTUBE_VIDEO",
-                    transcriptId,
-                    transcript.getYoutubeVideo().getCountryCode());
-
-            BiasAnalysisResultDto result = webClient.post()
-                    .uri(pythonBaseUrl + "/analyze/raw")
-                    .bodyValue(request)
-                    .retrieve()
-                    .bodyToMono(BiasAnalysisResultDto.class)
-                    .block();
+            PythonAnalysisClient.PythonAnalysisCallResult pythonCallResult =
+                    pythonAnalysisClient.analyzeWithFallback(transcript, savedJob.getId());
+            BiasAnalysisResultDto result = pythonCallResult.result();
+            log.info(
+                    "python_analysis_completed job_id={} target_id={} fallback_used={} final_endpoint={}",
+                    savedJob.getId(), savedJob.getTargetId(), pythonCallResult.fallbackUsed(), pythonCallResult.finalEndpoint()
+            );
 
             // 3. ContentSentence 저장 + pythonId(sentenceOrder) → DB ID 매핑 생성
             Map<Long, Long> pythonIdToDbId = new HashMap<>();
-            if (result.sentences() != null && !result.sentences().isEmpty()) {
+            List<SentenceInputDto> sentenceInputs = resolveSentenceInputs(result, pythonCallResult.fallbackSentences());
+            if (!sentenceInputs.isEmpty()) {
                 List<ContentSentence> savedSentences = contentSentenceRepository.saveAll(
-                        result.sentences().stream()
+                        sentenceInputs.stream()
                                 .map(s -> ContentSentence.builder()
                                         .targetId(transcriptId)
                                         .targetType(SentenceTargetType.YOUTUBE_TRANSCRIPT)
@@ -256,4 +239,16 @@ public class AnalysisService {
         return savedJob;
     }
 
+    private List<SentenceInputDto> resolveSentenceInputs(
+            BiasAnalysisResultDto result,
+            List<SentenceInputDto> fallbackSentences
+    ) {
+        if (result.sentences() != null && !result.sentences().isEmpty()) {
+            return result.sentences();
+        }
+        if (fallbackSentences != null && !fallbackSentences.isEmpty()) {
+            return fallbackSentences;
+        }
+        return List.of();
+    }
 }

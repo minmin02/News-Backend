@@ -50,3 +50,10 @@ server:
 
 python:
   base-url: ${PYTHON_BASE_URL:http://localhost:8000}
+  client:
+    connect-timeout-ms: ${PYTHON_CONNECT_TIMEOUT_MS:2000}
+    read-timeout-ms: ${PYTHON_READ_TIMEOUT_MS:120000}
+    retry:
+      max-attempts: ${PYTHON_RETRY_MAX_ATTEMPTS:1}
+      initial-backoff-ms: ${PYTHON_RETRY_INITIAL_BACKOFF_MS:300}
+      max-backoff-ms: ${PYTHON_RETRY_MAX_BACKOFF_MS:2000}
