@@ -35,11 +35,7 @@ public class BiasAnalysisResult extends BaseEntity {
 
     private Double emotionScore;
 
-    private Double anonymousSourceScore;
-
     private Double headlineBodyGapScore;
-
-    private Double neutralityScore;
 
     @Column(columnDefinition = "TEXT")
     private String summaryText;
