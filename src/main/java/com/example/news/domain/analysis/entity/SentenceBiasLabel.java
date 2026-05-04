@@ -35,8 +35,4 @@ public class SentenceBiasLabel extends BaseEntity {
 
     private Double score;
 
-    private String highlightColor;
-
-    private String evidenceKeyword;
-
 }

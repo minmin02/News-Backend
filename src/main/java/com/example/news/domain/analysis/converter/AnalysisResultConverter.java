@@ -34,9 +34,7 @@ public class AnalysisResultConverter {
         return new AnalysisResultResponse.SentenceLabelItem(
                 label.getContentSentence().getId(),
                 label.getLabelType(),
-                label.getScore(),
-                label.getHighlightColor(),
-                label.getEvidenceKeyword()
+                label.getScore()
         );
     }
 
@@ -63,9 +61,7 @@ public class AnalysisResultConverter {
                 result.getOverallBiasScore(),
                 result.getOpinionScore(),
                 result.getEmotionScore(),
-                result.getAnonymousSourceScore(),
                 result.getHeadlineBodyGapScore(),
-                result.getNeutralityScore(),
                 result.getSummaryText(),
                 result.getPerspectiveSummary(),
                 result.getEvidenceSummary(),

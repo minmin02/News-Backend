@@ -14,9 +14,7 @@ public record AnalysisResultResponse(
         Double overallBiasScore,
         Double opinionScore,
         Double emotionScore,
-        Double anonymousSourceScore,
         Double headlineBodyGapScore,
-        Double neutralityScore,
         String summaryText,
         String perspectiveSummary,
         String evidenceSummary,
@@ -37,9 +35,7 @@ public record AnalysisResultResponse(
     public record SentenceLabelItem(
             Long contentSentenceId,
             SentenceLabelType labelType,
-            Double score,
-            String highlightColor,
-            String evidenceKeyword
+            Double score
     ) {}
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)

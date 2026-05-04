@@ -4,10 +4,8 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public record EvidenceResultDto(
-        String evidenceType,
-        String title,
-        String description,
-        String sourceText,
-        Double confidenceScore
+public record SentenceResultResponse(
+        Long contentSentenceId,
+        String sentenceText,
+        Integer sentenceOrder
 ) {}

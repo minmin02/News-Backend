@@ -8,23 +8,27 @@ import java.util.List;
 import java.util.Map;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public record BiasAnalysisResultDto(
+public record BiasAnalysisResultResponse(
         Long targetId,
+        String targetType,
+        Long transcriptId,
+
         Double overallBiasScore,
         Double opinionScore,
         Double emotionScore,
-        Double anonymousSourceScore,
         @Nullable Double headlineBodyGapScore,
-        @Nullable Double neutralityScore,
+
         String summaryText,
         String perspectiveSummary,
         String evidenceSummary,
         String toneLabel,
-        Double subjectivityScore,
+
+        Double factRatio,
         String scoreEvidence,
         Map<String, Double> biasTypeScores,
-        @Nullable List<SentenceInputDto> sentences,
+
         @Nullable List<KeywordResultDto> keywords,
         @Nullable List<SentenceLabelResultDto> sentenceLabels,
-        @Nullable List<EvidenceResultDto> evidences
+        @Nullable List<EvidenceResultDto> evidences,
+        @Nullable List<SentenceResultResponse> sentences
 ) {}

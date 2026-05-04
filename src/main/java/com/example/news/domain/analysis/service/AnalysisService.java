@@ -1,7 +1,7 @@
 package com.example.news.domain.analysis.service;
 
 import com.example.news.domain.analysis.dto.AnalyzeRawTextRequestDto;
-import com.example.news.domain.analysis.dto.BiasAnalysisResultDto;
+import com.example.news.domain.analysis.dto.BiasAnalysisResultResponse;
 import com.example.news.domain.analysis.entity.AnalysisJob;
 import com.example.news.domain.content.entity.YoutubeTranscript;
 import com.example.news.domain.analysis.entity.BiasAnalysisKeyword;
@@ -59,16 +59,6 @@ public class AnalysisService {
     @Value("${python.base-url}")
     private String pythonBaseUrl;
 
-    /**
-     * transcript 원문 텍스트를 Python /analyze/raw로 전달하여 분석 작업을 생성하고 실행한다.
-     * Python이 문장 분리를 수행하며, 응답의 sentences를 ContentSentence로 저장한다.
-     *
-     * @param transcriptId YoutubeTranscript DB PK
-     * @param title        영상 제목 (headline-body gap 분석에 사용)
-     * @param language     언어 코드 (ko, en 등)
-     * @param rawText      transcript 원문 텍스트
-     * @return 생성된 AnalysisJob
-     */
     @Transactional
     public AnalysisJob createAnalysisJobFromRawText(YoutubeTranscript transcript) {
 
@@ -100,11 +90,11 @@ public class AnalysisService {
                     transcriptId,
                     transcript.getYoutubeVideo().getCountryCode());
 
-            BiasAnalysisResultDto result = webClient.post()
+            BiasAnalysisResultResponse result = webClient.post()
                     .uri(pythonBaseUrl + "/analyze/raw")
                     .bodyValue(request)
                     .retrieve()
-                    .bodyToMono(BiasAnalysisResultDto.class)
+                    .bodyToMono(BiasAnalysisResultResponse.class)
                     .block();
 
             // 3. ContentSentence 저장 + pythonId(sentenceOrder) → DB ID 매핑 생성
@@ -117,8 +107,6 @@ public class AnalysisService {
                                         .targetType(SentenceTargetType.YOUTUBE_TRANSCRIPT)
                                         .sentenceOrder(s.sentenceOrder())
                                         .sentenceText(s.sentenceText())
-                                        .startTimeMs(s.startTimeMs())
-                                        .endTimeMs(s.endTimeMs())
                                         .build())
                                 .toList()
                 );
@@ -138,9 +126,7 @@ public class AnalysisService {
                             .overallBiasScore(result.overallBiasScore())
                             .opinionScore(result.opinionScore())
                             .emotionScore(result.emotionScore())
-                            .anonymousSourceScore(result.anonymousSourceScore())
                             .headlineBodyGapScore(result.headlineBodyGapScore())
-                            .neutralityScore(result.neutralityScore())
                             .summaryText(result.summaryText())
                             .perspectiveSummary(result.perspectiveSummary())
                             .evidenceSummary(result.evidenceSummary())
@@ -173,21 +159,17 @@ public class AnalysisService {
                                         .contentSentence(contentSentenceRepository.getReferenceById(idMap.get(l.contentSentenceId())))
                                         .labelType(SentenceLabelType.valueOf(l.labelType().toUpperCase()))
                                         .score(l.score())
-                                        .highlightColor(l.highlightColor())
-                                        .evidenceKeyword(l.evidenceKeyword())
                                         .build())
                                 .toList()
                 );
             }
 
-            // 7. BiasEvidence 저장 (pythonId → DB ID 매핑 적용)
+            // 7. BiasEvidence 저장
             if (result.evidences() != null) {
                 biasEvidenceRepository.saveAll(
                         result.evidences().stream()
-                                .filter(e -> idMap.containsKey(e.contentSentenceId()))
                                 .map(e -> BiasEvidence.builder()
                                         .biasAnalysisResult(savedResult)
-                                        .contentSentence(contentSentenceRepository.getReferenceById(idMap.get(e.contentSentenceId())))
                                         .evidenceType(EvidenceType.valueOf(e.evidenceType().toUpperCase()))
                                         .title(e.title())
                                         .description(e.description())
