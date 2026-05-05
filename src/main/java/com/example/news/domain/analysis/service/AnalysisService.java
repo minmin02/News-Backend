@@ -10,7 +10,6 @@ import com.example.news.domain.analysis.entity.BiasEvidence;
 import com.example.news.domain.analysis.entity.ContentSentence;
 import com.example.news.domain.analysis.entity.HighlightResult;
 import com.example.news.domain.analysis.entity.HighlightSpan;
-import com.example.news.domain.analysis.entity.SentenceBiasLabel;
 import com.example.news.domain.analysis.enums.BiasKeywordType;
 import com.example.news.domain.analysis.enums.EvidenceType;
 import com.example.news.domain.analysis.enums.JobStatus;
@@ -148,34 +147,29 @@ public class AnalysisService {
                 );
             }
 
-            // 6. SentenceBiasLabel 저장 (pythonId → DB ID 매핑 적용)
+            // 6. SentenceBiasLabel: Python sentence_labels는 span 데이터(offset 포함)이므로
+            //    classifier 결과(FACT_LIKE/OPINION_LIKE)가 생기기 전까지 저장하지 않음.
+            //    span 데이터는 step 8의 HighlightSpan에만 저장한다.
             final Map<Long, Long> idMap = pythonIdToDbId;
-            if (result.sentenceLabels() != null) {
-                sentenceBiasLabelRepository.saveAll(
-                        result.sentenceLabels().stream()
-                                .filter(l -> idMap.containsKey(l.contentSentenceId()))
-                                .map(l -> SentenceBiasLabel.builder()
-                                        .analysisJob(savedJob)
-                                        .contentSentence(contentSentenceRepository.getReferenceById(idMap.get(l.contentSentenceId())))
-                                        .labelType(SentenceLabelType.valueOf(l.labelType().toUpperCase()))
-                                        .score(l.score())
-                                        .build())
-                                .toList()
-                );
-            }
 
-            // 7. BiasEvidence 저장
+            // 7. BiasEvidence 저장 (contentSentenceId가 없어도 evidence 자체는 저장)
             if (result.evidences() != null) {
                 biasEvidenceRepository.saveAll(
                         result.evidences().stream()
-                                .map(e -> BiasEvidence.builder()
-                                        .biasAnalysisResult(savedResult)
-                                        .evidenceType(EvidenceType.valueOf(e.evidenceType().toUpperCase()))
-                                        .title(e.title())
-                                        .description(e.description())
-                                        .sourceText(e.sourceText())
-                                        .confidenceScore(e.confidenceScore())
-                                        .build())
+                                .map(e -> {
+                                    ContentSentence cs = (e.contentSentenceId() != null && idMap.containsKey(e.contentSentenceId()))
+                                            ? contentSentenceRepository.getReferenceById(idMap.get(e.contentSentenceId()))
+                                            : null;
+                                    return BiasEvidence.builder()
+                                            .biasAnalysisResult(savedResult)
+                                            .contentSentence(cs)
+                                            .evidenceType(EvidenceType.valueOf(e.evidenceType().toUpperCase()))
+                                            .title(e.title())
+                                            .description(e.description())
+                                            .sourceText(e.sourceText())
+                                            .confidenceScore(e.confidenceScore())
+                                            .build();
+                                })
                                 .toList()
                 );
             }

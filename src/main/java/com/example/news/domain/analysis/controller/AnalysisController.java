@@ -34,7 +34,13 @@ public class AnalysisController {
             throw new CustomException(YoutubeErrorCode.TRANSCRIPT_NOT_AVAILABLE);
         }
         AnalysisJob job = analysisService.createAnalysisJobFromRawText(transcript);
-        return ApiResponse.ok(new AnalysisJobResponse(job.getId(), job.getStatus()));
+        return ApiResponse.ok(new AnalysisJobResponse(
+                job.getId(),
+                job.getTargetId(),
+                job.getTargetType().name(),
+                transcript.getId(),
+                job.getStatus()
+        ));
     }
 
     @GetMapping("/{targetId}")

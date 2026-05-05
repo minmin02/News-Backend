@@ -7,5 +7,8 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record AnalysisJobResponse(
         Long jobId,
+        Long targetId,
+        String targetType,
+        Long transcriptId,
         JobStatus status
 ) {}
