@@ -11,22 +11,30 @@ import java.util.List;
 
 public class AnalysisResultConverter {
 
+    private static Double clampScore(Double score) {
+        if (score == null) return null;
+        return Math.max(0.0, Math.min(1.0, score));
+    }
+
     public static AnalysisResultResponse.KeywordItem toKeywordItem(BiasAnalysisKeyword keyword) {
         return new AnalysisResultResponse.KeywordItem(
                 keyword.getKeywordText(),
                 keyword.getKeywordType(),
-                keyword.getScore()
+                clampScore(keyword.getScore())
         );
     }
 
     public static AnalysisResultResponse.EvidenceItem toEvidenceItem(BiasEvidence evidence) {
+        Long contentSentenceId = evidence.getContentSentence() != null
+                ? evidence.getContentSentence().getId()
+                : null;
         return new AnalysisResultResponse.EvidenceItem(
-                evidence.getContentSentence().getId(),
+                contentSentenceId,
                 evidence.getEvidenceType(),
                 evidence.getTitle(),
                 evidence.getDescription(),
                 evidence.getSourceText(),
-                evidence.getConfidenceScore()
+                clampScore(evidence.getConfidenceScore())
         );
     }
 
@@ -34,7 +42,7 @@ public class AnalysisResultConverter {
         return new AnalysisResultResponse.SentenceLabelItem(
                 label.getContentSentence().getId(),
                 label.getLabelType(),
-                label.getScore()
+                clampScore(label.getScore())
         );
     }
 
@@ -44,7 +52,7 @@ public class AnalysisResultConverter {
                 span.getStartOffset(),
                 span.getEndOffset(),
                 span.getLabelType(),
-                span.getScore(),
+                clampScore(span.getScore()),
                 span.getMatchedWord()
         );
     }

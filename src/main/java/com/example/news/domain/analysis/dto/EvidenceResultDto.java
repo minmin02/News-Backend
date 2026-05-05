@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record EvidenceResultDto(
+        Long contentSentenceId,
         String evidenceType,
         String title,
         String description,

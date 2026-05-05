@@ -34,7 +34,7 @@ public class BiasAnalysisResultService {
     @Transactional(readOnly = true)
     public AnalysisResultResponse getAnalysisResult(Long targetId) {
         BiasAnalysisResult result = biasAnalysisResultRepository
-                .findByTargetIdAndTargetType(targetId, TargetType.YOUTUBE_VIDEO)
+                .findTopByTargetIdAndTargetTypeOrderByCreatedAtDesc(targetId, TargetType.YOUTUBE_VIDEO)
                 .orElseThrow(() -> new AnalysisException(AnalysisErrorCode.ANALYSIS_RESULT_NOT_FOUND));
 
         var keywords = biasAnalysisKeywordRepository.findAllByBiasAnalysisResultId(result.getId())
