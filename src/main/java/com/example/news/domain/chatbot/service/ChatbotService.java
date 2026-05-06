@@ -91,6 +91,7 @@ public class ChatbotService {
         return new ChatbotDto.MessageListResponseDto(sessionId, messages);
     }
 
+    @Transactional
     public ChatbotDto.SendMessageResponseDto sendMessage(Long userId, Long sessionId, ChatbotDto.SendMessageRequestDto request) {
         chatSessionRepository.findByIdAndUserId(sessionId, userId)
                 .orElseThrow(ChatSessionNotFoundException::new);

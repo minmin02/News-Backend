@@ -3,6 +3,9 @@ package com.example.news.global.exception;
 
 import com.example.news.domain.analysis.exception.AnalysisException;
 import com.example.news.domain.analysis.exception.code.AnalysisErrorCode;
+import com.example.news.domain.chatbot.exception.AiPipelineException;
+import com.example.news.domain.chatbot.exception.ChatSessionNotFoundException;
+import com.example.news.domain.chatbot.exception.ChatSessionUnauthorizedException;
 import com.example.news.global.code.CommonResponseCode;
 import com.example.news.global.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -83,6 +86,27 @@ public class GlobalExceptionHandler {
 
         // 그 외 무결성 제약 위반
         return ApiResponse.error(CommonResponseCode.BAD_REQUEST_ERROR, "데이터 무결성 예외가 발생했습니다.");
+    }
+
+    @ExceptionHandler(ChatSessionNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ApiResponse<Object> handleChatSessionNotFoundException(ChatSessionNotFoundException e) {
+        log.warn("Chat session not found: {}", e.getMessage());
+        return ApiResponse.error(e.getResponseCode());
+    }
+
+    @ExceptionHandler(ChatSessionUnauthorizedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ApiResponse<Object> handleChatSessionUnauthorizedException(ChatSessionUnauthorizedException e) {
+        log.warn("Chat session unauthorized: {}", e.getMessage());
+        return ApiResponse.error(e.getResponseCode());
+    }
+
+    @ExceptionHandler(AiPipelineException.class)
+    @ResponseStatus(HttpStatus.BAD_GATEWAY)
+    public ApiResponse<Object> handleAiPipelineException(AiPipelineException e) {
+        log.error("AI pipeline error: {}", e.getMessage());
+        return ApiResponse.error(e.getResponseCode());
     }
 
     @ExceptionHandler(AnalysisException.class)
