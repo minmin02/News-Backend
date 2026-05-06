@@ -45,7 +45,8 @@ public class SecurityConfig {
             "/api/v1/files/upload",
             "/api/v1/youtube/recommendations",
             "/api/v1/youtube/*/comments",
-            "/api/v1/issues/popular-videos"
+            "/api/v1/issues/popular-videos",
+            "/api/v1/chat/welcome"
     );
 
     private static final List<String> JWT_EXCLUDE_PATHS = EXCLUDE_PATHS.stream()
