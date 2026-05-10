@@ -44,12 +44,23 @@ public class ChatbotDto {
 
     public record SendMessageRequestDto(
             @NotBlank(message = "content는 필수입니다")
-            String content
+            String content,
+            ChatContextDto context
+    ) {}
+
+    public record ChatContextDto(
+            String pageType,
+            String videoId
     ) {}
 
     public record SendMessageResponseDto(
             MessageResponseDto userMessage,
             MessageResponseDto botMessage
+    ) {}
+
+    public record UpdateSessionTitleRequestDto(
+            @NotBlank(message = "title은 필수입니다")
+            String title
     ) {}
 
     public record WelcomeResponseDto(

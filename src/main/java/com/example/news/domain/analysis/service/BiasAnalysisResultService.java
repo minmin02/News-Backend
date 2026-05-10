@@ -31,7 +31,7 @@ public class BiasAnalysisResultService {
     private final HighlightResultRepository highlightResultRepository;
     private final HighlightSpanRepository highlightSpanRepository;
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, noRollbackFor = AnalysisException.class)
     public AnalysisResultResponse getAnalysisResult(Long targetId) {
         BiasAnalysisResult result = biasAnalysisResultRepository
                 .findTopByTargetIdAndTargetTypeOrderByCreatedAtDesc(targetId, TargetType.YOUTUBE_VIDEO)

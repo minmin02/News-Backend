@@ -50,6 +50,14 @@ public class ChatbotController {
         return ApiResponse.ok(chatbotService.sendMessage(userDetails.getUserId(), sessionId, request));
     }
 
+    @PatchMapping("/sessions/{sessionId}")
+    public ApiResponse<ChatbotDto.SessionResponseDto> updateSessionTitle(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @PathVariable Long sessionId,
+            @RequestBody @Valid ChatbotDto.UpdateSessionTitleRequestDto request) {
+        return ApiResponse.ok(chatbotService.updateSessionTitle(userDetails.getUserId(), sessionId, request));
+    }
+
     @DeleteMapping("/sessions/{sessionId}")
     public ApiResponse<Void> deleteSession(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
