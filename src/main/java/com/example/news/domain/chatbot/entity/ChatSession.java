@@ -25,6 +25,12 @@ public class ChatSession {
     @Column(name = "title")
     private String title;
 
+    @Column(name = "pending_context_type")
+    private String pendingContextType;
+
+    @Column(name = "pending_context_json", columnDefinition = "TEXT")
+    private String pendingContextJson;
+
     @CreationTimestamp
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -35,5 +41,15 @@ public class ChatSession {
 
     public void updateTitle(String title) {
         this.title = title;
+    }
+
+    public void updatePendingContext(String pendingContextType, String pendingContextJson) {
+        this.pendingContextType = pendingContextType;
+        this.pendingContextJson = pendingContextJson;
+    }
+
+    public void clearPendingContext() {
+        this.pendingContextType = null;
+        this.pendingContextJson = null;
     }
 }

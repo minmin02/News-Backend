@@ -7,6 +7,7 @@ import com.example.news.domain.analysis.enums.JobType;
 import com.example.news.domain.analysis.enums.TargetType;
 import com.example.news.domain.analysis.service.AnalysisService;
 import com.example.news.domain.analysis.service.BiasAnalysisResultService;
+import com.example.news.domain.content.service.YoutubeTranscriptService;
 import com.example.news.global.config.SecurityConfig;
 import com.example.news.global.jwt.JwtAuthenticationFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -57,6 +58,9 @@ class AnalysisControllerTest {
 
     @MockBean
     BiasAnalysisResultService biasAnalysisResultService;
+
+    @MockBean
+    YoutubeTranscriptService youtubeTranscriptService;
 
     @Test
     void analyze_returns200_andJobIdStatus() throws Exception {
