@@ -9,6 +9,7 @@ import com.example.news.domain.content.exception.YoutubeApiException;
 import com.example.news.domain.content.repository.KeywordRepository;
 import com.example.news.domain.content.repository.YoutubeVideoKeywordRepository;
 import com.example.news.domain.content.repository.YoutubeVideoRepository;
+import com.example.news.domain.graph.service.VideoGraphSyncService;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.*;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,7 @@ public class YoutubeSearchService {
     private final KeywordRepository keywordRepository;
     private final YoutubeVideoKeywordRepository youtubeVideoKeywordRepository;
     private final TitleTranslationService titleTranslationService;
+    private final VideoGraphSyncService videoGraphSyncService;
 
     @Value("${youtube.api.key}")
     private String apiKey;
@@ -181,8 +183,10 @@ public class YoutubeSearchService {
     // 영상 단건 저장
     YoutubeVideo saveVideo(Video video) {
         String videoId = video.getId();
-        return youtubeVideoRepository.findByYoutubeVideoId(videoId)
+        YoutubeVideo saved = youtubeVideoRepository.findByYoutubeVideoId(videoId)
                 .orElseGet(() -> youtubeVideoRepository.save(YoutubeConverter.toYoutubeVideoEntity(video)));
+        videoGraphSyncService.syncVideo(saved);
+        return saved;
     }
 
     // 영상-키워드 연결 중복 없이 저장

@@ -19,6 +19,7 @@ import com.example.news.domain.issue.repository.ComparisonCountryItemRepository;
 import com.example.news.domain.issue.repository.ComparisonResultRepository;
 import com.example.news.domain.issue.repository.IssueClusterItemRepository;
 import com.example.news.domain.issue.repository.IssueClusterRepository;
+import com.example.news.domain.graph.service.IssueGraphSyncService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +41,7 @@ public class IssueService {
     private final ComparisonResultRepository comparisonResultRepository;
     private final ComparisonCountryItemRepository comparisonCountryItemRepository;
     private final BiasAnalysisResultRepository biasAnalysisResultRepository;
+    private final IssueGraphSyncService issueGraphSyncService;
 
     // 국가별 이슈 영상 검색
     @Transactional
@@ -79,7 +81,9 @@ public class IssueService {
         Map<Long, YoutubeVideo> videoMap = youtubeVideoRepository.findAllById(videoIds).stream()
                 .collect(Collectors.toMap(YoutubeVideo::getId, v -> v));
 
-        return IssueConverter.toSearchResponse(cluster, clusterItems, videoMap);
+        IssueSearchResponseDto response = IssueConverter.toSearchResponse(cluster, clusterItems, videoMap);
+        issueGraphSyncService.syncIssue(cluster, clusterItems, videoMap);
+        return response;
     }
 
     // 국가별 대표 영상 비교 결과 조회 (저장된 비교 결과 조회)

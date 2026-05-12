@@ -1,4 +1,9 @@
 spring:
+  neo4j:
+    uri: ${NEO4J_URI:bolt://localhost:7687}
+    authentication:
+      username: neo4j
+      password: ${NEO4J_PASSWORD:password}
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
