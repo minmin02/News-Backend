@@ -6,6 +6,7 @@ import com.example.news.domain.analysis.entity.BiasAnalysisResult;
 import com.example.news.domain.analysis.entity.BiasEvidence;
 import com.example.news.domain.analysis.entity.HighlightSpan;
 import com.example.news.domain.analysis.entity.SentenceBiasLabel;
+import com.example.news.domain.analysis.enums.BiasKeywordType;
 
 import java.util.List;
 
@@ -64,19 +65,26 @@ public class AnalysisResultConverter {
             List<AnalysisResultResponse.EvidenceItem> evidences,
             List<AnalysisResultResponse.HighlightSpanItem> highlightSpans
     ) {
+        List<AnalysisResultResponse.KeywordItem> emotionKeywords = keywords.stream()
+                .filter(k -> k.keywordType() == BiasKeywordType.EMOTION)
+                .toList();
+
         return new AnalysisResultResponse(
                 result.getTargetId(),
                 result.getOverallBiasScore(),
                 result.getOpinionScore(),
                 result.getEmotionScore(),
                 result.getHeadlineBodyGapScore(),
+                result.getHeadlineBodyGapStd(),
+                result.getHeadlineBodyGapLead(),
+                result.getHeadlineBodyGapTail(),
+                result.getHeadlineBodyGapLabel(),
+                result.getScoreReasonSummary(),
                 result.getSummaryText(),
-                result.getPerspectiveSummary(),
-                result.getEvidenceSummary(),
-                result.getToneLabel(),
                 result.getFactRatio(),
                 result.getScoreEvidence(),
                 keywords,
+                emotionKeywords,
                 sentenceLabels,
                 evidences,
                 highlightSpans

@@ -17,11 +17,13 @@ public record BiasAnalysisResultResponse(
         Double opinionScore,
         Double emotionScore,
         @Nullable Double headlineBodyGapScore,
+        @Nullable Double headlineBodyGapStd,
+        @Nullable Double headlineBodyGapLead,
+        @Nullable Double headlineBodyGapTail,
+        @Nullable String headlineBodyGapLabel,
+        @Nullable String scoreReasonSummary,
 
         String summaryText,
-        String perspectiveSummary,
-        String evidenceSummary,
-        String toneLabel,
 
         Double factRatio,
         String scoreEvidence,
