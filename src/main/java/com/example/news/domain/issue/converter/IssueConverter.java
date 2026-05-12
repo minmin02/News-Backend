@@ -72,7 +72,7 @@ public class IssueConverter {
         CountryCode country = CountryCode.of(countryCode);
 
         String summaryText = countryItem.getSummaryText();
-        String toneLabel = analysisResult != null ? analysisResult.getToneLabel() : null;
+        String toneLabel = null;
         Double overallBiasScore = analysisResult != null && analysisResult.getOverallBiasScore() != null
                 ? analysisResult.getOverallBiasScore()
                 : countryItem.getBiasScore();
