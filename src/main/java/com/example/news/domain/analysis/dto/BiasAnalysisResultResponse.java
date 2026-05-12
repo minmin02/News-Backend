@@ -24,9 +24,6 @@ public record BiasAnalysisResultResponse(
         @Nullable String scoreReasonSummary,
 
         String summaryText,
-        String perspectiveSummary,
-        String evidenceSummary,
-        String toneLabel,
 
         Double factRatio,
         String scoreEvidence,

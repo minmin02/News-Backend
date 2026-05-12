@@ -51,14 +51,6 @@ public class BiasAnalysisResult extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String summaryText;
 
-    @Column(columnDefinition = "TEXT")
-    private String perspectiveSummary;
-
-    @Column(columnDefinition = "TEXT")
-    private String evidenceSummary;
-
-    private String toneLabel;
-
     private Double factRatio;
 
     @Column(columnDefinition = "TEXT")
