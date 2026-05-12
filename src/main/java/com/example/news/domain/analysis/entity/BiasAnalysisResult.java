@@ -37,6 +37,17 @@ public class BiasAnalysisResult extends BaseEntity {
 
     private Double headlineBodyGapScore;
 
+    private Double headlineBodyGapStd;
+
+    private Double headlineBodyGapLead;
+
+    private Double headlineBodyGapTail;
+
+    private String headlineBodyGapLabel;
+
+    @Column(columnDefinition = "TEXT")
+    private String scoreReasonSummary;
+
     @Column(columnDefinition = "TEXT")
     private String summaryText;
 
