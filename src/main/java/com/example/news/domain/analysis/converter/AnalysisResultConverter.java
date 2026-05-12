@@ -74,6 +74,8 @@ public class AnalysisResultConverter {
                 result.getPerspectiveSummary(),
                 result.getEvidenceSummary(),
                 result.getToneLabel(),
+                result.getFactRatio(),
+                result.getScoreEvidence(),
                 keywords,
                 sentenceLabels,
                 evidences,
