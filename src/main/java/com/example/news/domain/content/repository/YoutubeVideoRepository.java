@@ -35,7 +35,6 @@ public interface YoutubeVideoRepository extends JpaRepository<YoutubeVideo, Long
                 or lower(sourceKeyword.keywordName) like lower(concat('%', :keyword, '%'))
                 or lower(sourceKeyword.normalizedKeyword) like lower(concat('%', :keyword, '%'))
                 or lower(r.summaryText) like lower(concat('%', :keyword, '%'))
-                or lower(r.evidenceSummary) like lower(concat('%', :keyword, '%'))
               )
             order by v.collectedAt desc nulls last, v.publishedAt desc nulls last, v.id desc
             """)
