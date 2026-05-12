@@ -130,6 +130,8 @@ public class AnalysisService {
                             .perspectiveSummary(result.perspectiveSummary())
                             .evidenceSummary(result.evidenceSummary())
                             .toneLabel(result.toneLabel())
+                            .factRatio(result.factRatio())
+                            .scoreEvidence(result.scoreEvidence())
                             .build()
             );
 

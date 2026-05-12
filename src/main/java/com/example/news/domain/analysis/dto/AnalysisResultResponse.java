@@ -19,6 +19,8 @@ public record AnalysisResultResponse(
         String perspectiveSummary,
         String evidenceSummary,
         String toneLabel,
+        Double factRatio,
+        String scoreEvidence,
         List<KeywordItem> keywords,
         List<SentenceLabelItem> sentenceLabels,
         List<EvidenceItem> evidences,
