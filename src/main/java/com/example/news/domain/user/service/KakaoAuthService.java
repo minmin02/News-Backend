@@ -3,12 +3,10 @@ package com.example.news.domain.user.service;
 import com.example.news.domain.user.dto.KakaoDto;
 import com.example.news.domain.user.dto.UserDto;
 import com.example.news.domain.user.entity.User;
-import com.example.news.domain.user.entity.UserSocialAccount;
 import com.example.news.domain.user.enums.SocialProvider;
 import com.example.news.domain.user.enums.UserErrorCode;
 import com.example.news.domain.user.exception.KakaoAuthException;
 import com.example.news.domain.user.repository.UserRepository;
-import com.example.news.domain.user.repository.UserSocialAccountRepository;
 import com.example.news.global.jwt.JwtUtil;
 import com.example.news.global.jwt.dto.TokenDataDto;
 import lombok.RequiredArgsConstructor;
@@ -22,15 +20,12 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.RestClientResponseException;
 
-import java.time.LocalDateTime;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class KakaoAuthService {
 
     private final UserRepository userRepository;
-    private final UserSocialAccountRepository userSocialAccountRepository;
     private final JwtUtil jwtUtil;
     private final RestTemplate restTemplate;
 
@@ -54,10 +49,9 @@ public class KakaoAuthService {
         String providerUserId = String.valueOf(userInfo.id());
         String providerEmail = userInfo.kakaoAccount() != null ? userInfo.kakaoAccount().email() : null;
 
-        User user = userSocialAccountRepository
+        User user = userRepository
                 .findByProviderAndProviderUserId(SocialProvider.KAKAO, providerUserId)
-                .map(UserSocialAccount::getUser)
-                .orElseGet(() -> createSocialUser(providerUserId, providerEmail));
+                .orElseGet(() -> createSocialUser(SocialProvider.KAKAO, providerUserId, providerEmail));
 
         TokenDataDto tokenData = jwtUtil.createTokenData(user.getUserId());
         return UserDto.TokenResponseDto.from(tokenData);
@@ -150,31 +144,12 @@ public class KakaoAuthService {
         }
     }
 
-    private User createSocialUser(String providerUserId, String providerEmail) {
-        // 동일 이메일로 일반 가입한 계정이 있으면 해당 계정에 소셜 연결
-        User user;
-        if (providerEmail != null && userRepository.existsByEmail(providerEmail)) {
-            user = userRepository.findByEmail(providerEmail)
-                    .orElseThrow(() -> new KakaoAuthException(UserErrorCode.KAKAO_AUTH_FAILED));
-        } else {
-            // 신규 유저 생성 (카카오에서 이메일 미제공 시 고유 더미 이메일 사용)
-            String email = providerEmail != null
-                    ? providerEmail
-                    : "kakao_" + providerUserId + "@social.local";
-            user = userRepository.save(User.builder()
-                    .email(email)
-                    .build());
-        }
-
-        userSocialAccountRepository.save(UserSocialAccount.builder()
-                .user(user)
-                .provider(SocialProvider.KAKAO)
+    private User createSocialUser(SocialProvider provider, String providerUserId, String providerEmail) {
+        return userRepository.save(User.builder()
+                .email("kakao_" + providerUserId + "@social.local")
+                .provider(provider)
                 .providerUserId(providerUserId)
-                .providerEmail(providerEmail)
-                .connectedAt(LocalDateTime.now())
                 .build());
-
-        return user;
     }
 
     private boolean hasText(String value) {

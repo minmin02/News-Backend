@@ -1,5 +1,6 @@
 package com.example.news.domain.user.entity;
 
+import com.example.news.domain.user.enums.SocialProvider;
 import com.example.news.domain.user.enums.UserStatus;
 import com.example.news.global.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -43,6 +44,13 @@ public class User extends BaseEntity {
 
     @Column(name = "profile_image_key")
     private String profileImageKey;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "provider")
+    private SocialProvider provider;
+
+    @Column(name = "provider_user_id")
+    private String providerUserId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")

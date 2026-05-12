@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   app:
-    image: ${DOCKERHUB_USERNAME}/spring-news-app:latest
+    image: spring-news-app:local
     container_name: spring-news-app
     ports:
       - "8080:8080"
@@ -26,6 +26,8 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
+      - AI_PIPELINE_URL=http://host.docker.internal:8000
+      - PYTHON_BASE_URL=http://host.docker.internal:8000
     depends_on:
       postgres:
         condition: service_healthy

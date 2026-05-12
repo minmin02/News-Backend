@@ -3,12 +3,10 @@ package com.example.news.domain.user.service;
 import com.example.news.domain.user.dto.GoogleDto;
 import com.example.news.domain.user.dto.UserDto;
 import com.example.news.domain.user.entity.User;
-import com.example.news.domain.user.entity.UserSocialAccount;
 import com.example.news.domain.user.enums.SocialProvider;
 import com.example.news.domain.user.enums.UserErrorCode;
 import com.example.news.domain.user.exception.GoogleAuthException;
 import com.example.news.domain.user.repository.UserRepository;
-import com.example.news.domain.user.repository.UserSocialAccountRepository;
 import com.example.news.global.jwt.JwtUtil;
 import com.example.news.global.jwt.dto.TokenDataDto;
 import lombok.RequiredArgsConstructor;
@@ -21,15 +19,12 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.LocalDateTime;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class GoogleAuthService {
 
     private final UserRepository userRepository;
-    private final UserSocialAccountRepository userSocialAccountRepository;
     private final JwtUtil jwtUtil;
     private final RestTemplate restTemplate;
 
@@ -50,10 +45,9 @@ public class GoogleAuthService {
         String googleAccessToken = getGoogleAccessToken(code);
         GoogleDto.GoogleUserInfoResponse userInfo = getGoogleUserInfo(googleAccessToken);
 
-        User user = userSocialAccountRepository
+        User user = userRepository
                 .findByProviderAndProviderUserId(SocialProvider.GOOGLE, userInfo.id())
-                .map(UserSocialAccount::getUser)
-                .orElseGet(() -> createSocialUser(userInfo.id(), userInfo.email()));
+                .orElseGet(() -> createSocialUser(SocialProvider.GOOGLE, userInfo.id(), userInfo.email()));
 
         TokenDataDto tokenData = jwtUtil.createTokenData(user.getUserId());
         return UserDto.TokenResponseDto.from(tokenData);
@@ -101,28 +95,11 @@ public class GoogleAuthService {
         }
     }
 
-    private User createSocialUser(String providerUserId, String providerEmail) {
-        User user;
-        if (providerEmail != null && userRepository.existsByEmail(providerEmail)) {
-            user = userRepository.findByEmail(providerEmail)
-                    .orElseThrow(() -> new GoogleAuthException(UserErrorCode.GOOGLE_AUTH_FAILED));
-        } else {
-            String email = providerEmail != null
-                    ? providerEmail
-                    : "google_" + providerUserId + "@social.local";
-            user = userRepository.save(User.builder()
-                    .email(email)
-                    .build());
-        }
-
-        userSocialAccountRepository.save(UserSocialAccount.builder()
-                .user(user)
-                .provider(SocialProvider.GOOGLE)
+    private User createSocialUser(SocialProvider provider, String providerUserId, String providerEmail) {
+        return userRepository.save(User.builder()
+                .email("google_" + providerUserId + "@social.local")
+                .provider(provider)
                 .providerUserId(providerUserId)
-                .providerEmail(providerEmail)
-                .connectedAt(LocalDateTime.now())
                 .build());
-
-        return user;
     }
 }
