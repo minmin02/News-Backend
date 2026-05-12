@@ -15,7 +15,12 @@ public class UserDto {
             String email,
 
             @NotBlank(message = "비밀번호는 필수입니다")
-            String password
+            String password,
+
+            String name,
+            String nickname,
+            LocalDate birth,
+            String phone
     ) {}
 
     public record LoginRequestDto(

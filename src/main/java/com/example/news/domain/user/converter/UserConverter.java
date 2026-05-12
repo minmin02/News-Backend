@@ -10,6 +10,10 @@ public class UserConverter {
         return User.builder()
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
+                .name(request.name())
+                .nickname(request.nickname())
+                .birth(request.birth())
+                .phone(request.phone())
                 .build();
     }
 
