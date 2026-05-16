@@ -4,6 +4,9 @@ import com.example.news.domain.analysis.dto.AnalyzeRawTextRequestDto;
 import com.example.news.domain.analysis.dto.BiasAnalysisResultResponse;
 import com.example.news.domain.analysis.entity.AnalysisJob;
 import com.example.news.domain.content.entity.YoutubeTranscript;
+import com.example.news.domain.content.entity.YoutubeVideo;
+import com.example.news.domain.content.repository.YoutubeVideoRepository;
+import com.example.news.domain.content.service.YoutubeTranscriptService;
 import com.example.news.domain.analysis.entity.BiasAnalysisKeyword;
 import com.example.news.domain.analysis.entity.BiasAnalysisResult;
 import com.example.news.domain.analysis.entity.BiasEvidence;
@@ -30,6 +33,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -37,6 +41,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -54,6 +59,8 @@ public class AnalysisService {
     private final HighlightSpanRepository highlightSpanRepository;
     private final WebClient webClient;
     private final ApplicationEventPublisher eventPublisher;
+    private final YoutubeVideoRepository youtubeVideoRepository;
+    private final YoutubeTranscriptService youtubeTranscriptService;
 
     @Value("${python.base-url}")
     private String pythonBaseUrl;
@@ -234,6 +241,24 @@ public class AnalysisService {
         }
 
         return savedJob;
+    }
+
+    @Async
+    @Transactional
+    public void triggerAnalysisAsync(Long videoId) {
+        if (biasAnalysisResultRepository.existsByTargetTypeAndTargetId(TargetType.YOUTUBE_VIDEO, videoId)) {
+            return;
+        }
+        Optional<YoutubeVideo> videoOpt = youtubeVideoRepository.findById(videoId);
+        if (videoOpt.isEmpty()) return;
+
+        try {
+            YoutubeTranscript transcript =
+                    youtubeTranscriptService.getOrFetchTranscriptEntity(videoOpt.get().getYoutubeVideoId());
+            createAnalysisJobFromRawText(transcript);
+        } catch (Exception e) {
+            log.warn("백그라운드 분석 실패 (videoId={}): {}", videoId, e.getMessage());
+        }
     }
 
 }

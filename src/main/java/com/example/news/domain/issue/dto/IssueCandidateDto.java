@@ -19,6 +19,7 @@ public class IssueCandidateDto {
     private String title;
     private String summaryText;
     private Double overallBiasScore;
+    private Double opinionScore;
     private List<String> analysisKeywords;
     private LocalDateTime publishedAt;
 }
