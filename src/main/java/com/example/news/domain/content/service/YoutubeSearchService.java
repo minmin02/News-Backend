@@ -7,14 +7,17 @@ import com.example.news.domain.content.entity.YoutubeVideo;
 import com.example.news.domain.content.entity.YoutubeVideoKeyword;
 import com.example.news.domain.content.exception.YoutubeApiException;
 import com.example.news.domain.content.repository.KeywordRepository;
+import com.example.news.domain.content.repository.YoutubeTranscriptRepository;
 import com.example.news.domain.content.repository.YoutubeVideoKeywordRepository;
 import com.example.news.domain.content.repository.YoutubeVideoRepository;
 import com.example.news.domain.graph.service.VideoGraphSyncService;
+import com.example.news.global.event.VideoSearchedEvent;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,10 +38,12 @@ public class YoutubeSearchService {
     // 키워드 검색 핵심 서비스
     private final YouTube youtubeClient;
     private final YoutubeVideoRepository youtubeVideoRepository;
+    private final YoutubeTranscriptRepository youtubeTranscriptRepository;
     private final KeywordRepository keywordRepository;
     private final YoutubeVideoKeywordRepository youtubeVideoKeywordRepository;
     private final TitleTranslationService titleTranslationService;
     private final VideoGraphSyncService videoGraphSyncService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${youtube.api.key}")
     private String apiKey;
@@ -53,6 +58,9 @@ public class YoutubeSearchService {
         List<YoutubeVideo> videos = fetchAndSaveVideos(videoIds);
         translateTitlesIfNeeded(videos);
         linkKeywordToVideos(keyword, videos);
+
+        List<Long> videoDbIds = videos.stream().map(YoutubeVideo::getId).toList();
+        eventPublisher.publishEvent(new VideoSearchedEvent(keyword, videoDbIds));
 
         return videos.stream()
                 .map(YoutubeConverter::toVideoCard)
@@ -139,11 +147,15 @@ public class YoutubeSearchService {
     private List<YoutubeVideo> fetchAndSaveVideos(List<String> videoIds) {
         List<YoutubeVideo> result = new ArrayList<>();
 
-        // DB에 이미 있는 영상은 재호출 없이 반환
+        // DB에 이미 있는 영상은 재호출 없이 반환 (자막 있는 것만)
         List<String> missingIds = new ArrayList<>();
         for (String videoId : videoIds) {
             youtubeVideoRepository.findByYoutubeVideoId(videoId).ifPresentOrElse(
-                    result::add,
+                    video -> {
+                        if (youtubeTranscriptRepository.existsByYoutubeVideoId(video.getId())) {
+                            result.add(video);
+                        }
+                    },
                     () -> missingIds.add(videoId)
             );
         }

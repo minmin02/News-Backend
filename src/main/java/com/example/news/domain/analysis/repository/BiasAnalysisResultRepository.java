@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface BiasAnalysisResultRepository extends JpaRepository<BiasAnalysisResult, Long> {
     Optional<BiasAnalysisResult> findTopByTargetIdAndTargetTypeOrderByCreatedAtDesc(Long targetId, TargetType targetType);
     List<BiasAnalysisResult> findByTargetTypeAndTargetIdIn(TargetType targetType, List<Long> targetIds);
+    boolean existsByTargetTypeAndTargetId(TargetType targetType, Long targetId);
 }

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,6 +19,8 @@ public interface IssueClusterItemRepository extends JpaRepository<IssueClusterIt
     Optional<IssueClusterItem> findByIssueClusterIdAndIsRepresentativeTrue(Long issueClusterId);
 
     List<IssueClusterItem> findByYoutubeVideoId(Long youtubeVideoId);
+
+    List<IssueClusterItem> findByIssueClusterIdIn(Collection<Long> clusterIds);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional

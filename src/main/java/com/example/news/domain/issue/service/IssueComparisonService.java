@@ -229,6 +229,7 @@ public class IssueComparisonService {
                     .title(video.getTitle())
                     .summaryText(result.getSummaryText())
                     .overallBiasScore(result.getOverallBiasScore())
+                    .opinionScore(result.getOpinionScore())
                     .analysisKeywords(keywords)
                     .publishedAt(video.getPublishedAt())
                     .build());
