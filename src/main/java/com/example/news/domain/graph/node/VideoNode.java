@@ -45,6 +45,8 @@ public class VideoNode {
     @Property("view_count")
     private Long viewCount;
 
+    private String status;
+
     @Property("thumbnail_url")
     private String thumbnailUrl;
 
@@ -54,6 +56,9 @@ public class VideoNode {
 
     @Relationship(type = "PUBLISHED_BY", direction = Relationship.Direction.OUTGOING)
     private ChannelNode channel;
+
+    @Relationship(type = "HAS_ANALYSIS", direction = Relationship.Direction.OUTGOING)
+    private AnalysisResultNode analysisResult;
 
     // load-then-update 패턴으로 기존 PART_OF 관계를 항상 보존
     @Builder.Default

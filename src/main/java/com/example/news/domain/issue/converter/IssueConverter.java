@@ -72,12 +72,12 @@ public class IssueConverter {
         CountryCode country = CountryCode.of(countryCode);
 
         String summaryText = countryItem.getSummaryText();
-        String toneLabel = null;
         Double overallBiasScore = analysisResult != null && analysisResult.getOverallBiasScore() != null
                 ? analysisResult.getOverallBiasScore()
                 : countryItem.getBiasScore();
         Double opinionScore = analysisResult != null ? analysisResult.getOpinionScore() : null;
         Double emotionScore = analysisResult != null ? analysisResult.getEmotionScore() : null;
+        String toneLabel = resolveToneLabel(overallBiasScore);
 
         IssueComparisonResponseDto.ComparisonSummary comparison =
                 IssueComparisonResponseDto.ComparisonSummary.builder()
@@ -106,5 +106,12 @@ public class IssueConverter {
                 .evidenceSummary(null)
                 .comparison(comparison)
                 .build();
+    }
+
+    private static String resolveToneLabel(Double overallBiasScore) {
+        if (overallBiasScore == null) return null;
+        if (overallBiasScore < 0.33) return "LOW_BIAS";
+        if (overallBiasScore < 0.66) return "MID_BIAS";
+        return "HIGH_BIAS";
     }
 }

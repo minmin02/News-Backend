@@ -13,6 +13,8 @@ import com.example.news.domain.issue.entity.ComparisonResult;
 import com.example.news.domain.issue.entity.IssueCluster;
 import com.example.news.domain.issue.entity.IssueClusterItem;
 import com.example.news.domain.issue.enums.ClusterStatus;
+import com.example.news.domain.issue.enums.IssueClusterItemSourceType;
+import com.example.news.domain.issue.enums.IssueClusterType;
 import com.example.news.domain.issue.repository.ComparisonCountryItemRepository;
 import com.example.news.domain.issue.repository.ComparisonResultRepository;
 import com.example.news.domain.issue.repository.IssueClusterItemRepository;
@@ -38,6 +40,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class IssueComparisonService {
     private static final String UNKNOWN_COUNTRY_CODE = "UNKNOWN";
+    private static final List<String> CURATION_COUNTRIES = List.of("KR", "US", "CN");
+    private static final int MIN_ANALYZED_PER_COUNTRY = 10;
 
 
     private final IssueClusterRepository issueClusterRepository;
@@ -115,7 +119,17 @@ public class IssueComparisonService {
                 .map(item -> item.getIssueCluster().getId())
                 .collect(Collectors.toSet());
 
+        // 큐레이션 세트(ANALYZING)는 국가별 최소 분석 성공 수를 충족하면 READY_FOR_REPORT로 전이한다.
+        List<IssueCluster> analyzingClusters = issueClusterRepository.findAllById(clusterIds).stream()
+                .filter(c -> c.getClusterType() == IssueClusterType.CURATION_MANUAL)
+                .filter(c -> c.getStatus() == ClusterStatus.ANALYZING)
+                .toList();
+        for (IssueCluster cluster : analyzingClusters) {
+            tryAdvanceCurationCluster(cluster);
+        }
+
         List<IssueCluster> targetClusters = issueClusterRepository.findAllById(clusterIds).stream()
+                .filter(c -> c.getClusterType() == IssueClusterType.SEARCH_AUTO)
                 .filter(c -> c.getStatus() == ClusterStatus.PENDING)
                 .toList();
 
@@ -151,6 +165,130 @@ public class IssueComparisonService {
                 issueClusterRepository.updateStatus(cluster.getId(), ClusterStatus.FAIL);
             }
         }
+    }
+
+    private void tryAdvanceCurationCluster(IssueCluster cluster) {
+        List<IssueClusterItem> items = issueClusterItemRepository.findByIssueClusterId(cluster.getId());
+        List<Long> videoIds = items.stream()
+                .map(IssueClusterItem::getYoutubeVideoId)
+                .distinct()
+                .toList();
+        Map<Long, BiasAnalysisResult> analyzed = biasAnalysisResultRepository
+                .findByTargetTypeAndTargetIdIn(TargetType.YOUTUBE_VIDEO, videoIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        BiasAnalysisResult::getTargetId,
+                        r -> r,
+                        (a, b) -> a.getCreatedAt() != null && b.getCreatedAt() != null && b.getCreatedAt().isAfter(a.getCreatedAt()) ? b : a
+                ));
+
+        Map<String, Integer> successByCountry = new LinkedHashMap<>();
+        CURATION_COUNTRIES.forEach(c -> successByCountry.put(c, 0));
+        for (IssueClusterItem item : items) {
+            String country = normalizeCountryCode(item.getCountryCode());
+            if (!CURATION_COUNTRIES.contains(country)) continue;
+            if (analyzed.containsKey(item.getYoutubeVideoId())) {
+                successByCountry.put(country, successByCountry.get(country) + 1);
+            }
+        }
+        boolean ready = CURATION_COUNTRIES.stream()
+                .allMatch(country -> successByCountry.getOrDefault(country, 0) >= MIN_ANALYZED_PER_COUNTRY);
+        if (!ready) {
+            return;
+        }
+
+        int claimed = issueClusterRepository.updateStatusIfCurrent(
+                cluster.getId(),
+                ClusterStatus.ANALYZING,
+                ClusterStatus.READY_FOR_REPORT
+        );
+        if (claimed == 0) {
+            return;
+        }
+        saveCurationComparisonResult(cluster, items, analyzed);
+        log.info("curation set ready for report (clusterId={}, countrySuccess={})", cluster.getId(), successByCountry);
+    }
+
+    private void saveCurationComparisonResult(IssueCluster cluster,
+                                              List<IssueClusterItem> items,
+                                              Map<Long, BiasAnalysisResult> analyzed) {
+        List<Long> videoIds = items.stream().map(IssueClusterItem::getYoutubeVideoId).distinct().toList();
+        Map<Long, YoutubeVideo> videoMap = youtubeVideoRepository.findAllById(videoIds).stream()
+                .collect(Collectors.toMap(YoutubeVideo::getId, v -> v));
+
+        List<ComparisonResult> existingResults = comparisonResultRepository.findByIssueClusterId(cluster.getId());
+        for (ComparisonResult existing : existingResults) {
+            comparisonCountryItemRepository.deleteByComparisonResultId(existing.getId());
+        }
+        comparisonResultRepository.deleteAll(existingResults);
+
+        ComparisonResult result = comparisonResultRepository.save(
+                ComparisonResult.builder()
+                        .issueCluster(cluster)
+                        .keyword(cluster.getSearchKeyword())
+                        .periodStart(cluster.getPeriodStartDate())
+                        .periodEnd(cluster.getPeriodEndDate())
+                        .snapshotJson(buildCurationSnapshot(items, videoMap, analyzed))
+                        .build()
+        );
+
+        List<ComparisonCountryItem> countryItems = CURATION_COUNTRIES.stream()
+                .map(country -> pickRepresentativeByCountry(country, items, videoMap, analyzed))
+                .filter(Objects::nonNull)
+                .map(rep -> ComparisonCountryItem.builder()
+                        .comparisonResult(result)
+                        .countryCode(rep.countryCode())
+                        .representativeVideoId(rep.video().getId())
+                        .title(rep.video().getTitle())
+                        .summaryText(rep.analysis().getSummaryText())
+                        .biasScore(rep.analysis().getOverallBiasScore())
+                        .build())
+                .toList();
+        comparisonCountryItemRepository.saveAll(countryItems);
+    }
+
+    private String buildCurationSnapshot(List<IssueClusterItem> items,
+                                         Map<Long, YoutubeVideo> videoMap,
+                                         Map<Long, BiasAnalysisResult> analyzed) {
+        List<SnapshotCountryItem> payload = items.stream()
+                .filter(item -> analyzed.containsKey(item.getYoutubeVideoId()))
+                .map(item -> {
+                    YoutubeVideo video = videoMap.get(item.getYoutubeVideoId());
+                    BiasAnalysisResult analysis = analyzed.get(item.getYoutubeVideoId());
+                    return new SnapshotCountryItem(
+                            normalizeCountryCode(item.getCountryCode()),
+                            item.getYoutubeVideoId(),
+                            video != null ? video.getTitle() : null,
+                            analysis != null ? analysis.getSummaryText() : null,
+                            analysis != null ? analysis.getOverallBiasScore() : null,
+                            item.getRankNo()
+                    );
+                })
+                .toList();
+        try {
+            return objectMapper.writeValueAsString(payload);
+        } catch (Exception e) {
+            log.warn("curation snapshotJson 생성 실패: {}", e.getMessage());
+            return "[]";
+        }
+    }
+
+    private record RepresentativeByCountry(String countryCode, YoutubeVideo video, BiasAnalysisResult analysis) {}
+
+    private RepresentativeByCountry pickRepresentativeByCountry(String countryCode,
+                                                                List<IssueClusterItem> items,
+                                                                Map<Long, YoutubeVideo> videoMap,
+                                                                Map<Long, BiasAnalysisResult> analyzed) {
+        return items.stream()
+                .filter(item -> countryCode.equals(normalizeCountryCode(item.getCountryCode())))
+                .filter(item -> analyzed.containsKey(item.getYoutubeVideoId()))
+                .map(item -> new RepresentativeByCountry(
+                        countryCode,
+                        videoMap.get(item.getYoutubeVideoId()),
+                        analyzed.get(item.getYoutubeVideoId())))
+                .filter(rep -> rep.video() != null && rep.analysis() != null)
+                .max(Comparator.comparingLong(rep -> rep.video().getViewCount() == null ? 0L : rep.video().getViewCount()))
+                .orElse(null);
     }
 
     // prepareComparisonInputs
@@ -245,6 +383,7 @@ public class IssueComparisonService {
         IssueCluster stub = IssueCluster.builder()
                 .searchKeyword("")
                 .status(ClusterStatus.PENDING)
+                .clusterType(IssueClusterType.SEARCH_AUTO)
                 .build();
         return buildClusterGroups(candidates, stub).stream()
                 .map(g -> g.baseCluster)
@@ -470,6 +609,7 @@ public class IssueComparisonService {
                                 .periodEndDate(originalCluster.getPeriodEndDate())
                                 .clusterLabel("group-" + (gi + 1))
                                 .status(ClusterStatus.COMPLETED)
+                                .clusterType(IssueClusterType.SEARCH_AUTO)
                                 .build()
                 );
             }
@@ -484,6 +624,7 @@ public class IssueComparisonService {
                                 .similarityScore(sc.similarityScore())
                                 .isRepresentative(sc.isRepresentative())
                                 .rankNo(sc.rankNo())
+                                .sourceType(IssueClusterItemSourceType.AUTO)
                                 .build()
                 );
             }

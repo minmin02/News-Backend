@@ -6,6 +6,7 @@ import com.example.news.domain.analysis.exception.code.AnalysisErrorCode;
 import com.example.news.domain.chatbot.exception.AiPipelineException;
 import com.example.news.domain.chatbot.exception.ChatSessionNotFoundException;
 import com.example.news.domain.chatbot.exception.ChatSessionUnauthorizedException;
+import com.example.news.domain.comparison.exception.ComparisonException;
 import com.example.news.global.code.CommonResponseCode;
 import com.example.news.global.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -121,6 +122,21 @@ public class    GlobalExceptionHandler {
                 status.value(),
                 e.getMessage());
         return ResponseEntity.status(status).body(ApiResponse.error(e.getErrorCode()));
+    }
+
+    @ExceptionHandler(ComparisonException.class)
+    public ResponseEntity<ApiResponse<Object>> handleComparisonException(ComparisonException e) {
+        HttpStatus status = switch (e.getErrorCode()) {
+            case INVALID_COMPARISON_REQUEST -> HttpStatus.BAD_REQUEST;
+            case COMPARISON_API_FAILED -> HttpStatus.BAD_GATEWAY;
+            case COMPARISON_VIDEO_NOT_FOUND -> HttpStatus.NOT_FOUND;
+        };
+        log.warn("Comparison exception [{}] {} → HTTP {}: {}",
+                e.getErrorCode().getStatusCode(),
+                e.getErrorCode().name(),
+                status.value(),
+                e.getMessage());
+        return ResponseEntity.status(status).body(ApiResponse.error(e.getErrorCode(), e.getMessage()));
     }
 
     @ExceptionHandler(CustomException.class)

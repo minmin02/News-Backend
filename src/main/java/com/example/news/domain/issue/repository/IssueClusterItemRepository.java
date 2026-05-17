@@ -13,8 +13,10 @@ import java.util.Optional;
 public interface IssueClusterItemRepository extends JpaRepository<IssueClusterItem, Long> {
 
     List<IssueClusterItem> findByIssueClusterId(Long issueClusterId);
+    long countByIssueClusterId(Long issueClusterId);
 
     List<IssueClusterItem> findByIssueClusterIdAndCountryCode(Long issueClusterId, String countryCode);
+    Optional<IssueClusterItem> findByIssueClusterIdAndYoutubeVideoId(Long issueClusterId, Long youtubeVideoId);
 
     Optional<IssueClusterItem> findByIssueClusterIdAndIsRepresentativeTrue(Long issueClusterId);
 
