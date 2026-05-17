@@ -23,8 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -47,10 +47,12 @@ public class YoutubeSearchService {
 
     @Value("${youtube.api.key}")
     private String apiKey;
+    @Value("${issue.search.auto-cluster-enabled:false}")
+    private boolean issueSearchAutoClusterEnabled;
 
     @Transactional
-    public List<YoutubeVideoDto.VideoCard> search(String keyword) {
-        List<String> videoIds = searchVideoIds(keyword);
+    public List<YoutubeVideoDto.VideoCard> search(String keyword, String sort) {
+        List<String> videoIds = searchVideoIds(keyword, sort);
         if (videoIds.isEmpty()) {
             return List.of();
         }
@@ -59,8 +61,10 @@ public class YoutubeSearchService {
         translateTitlesIfNeeded(videos);
         linkKeywordToVideos(keyword, videos);
 
-        List<Long> videoDbIds = videos.stream().map(YoutubeVideo::getId).toList();
-        eventPublisher.publishEvent(new VideoSearchedEvent(keyword, videoDbIds));
+        if (issueSearchAutoClusterEnabled) {
+            List<Long> videoDbIds = videos.stream().map(YoutubeVideo::getId).toList();
+            eventPublisher.publishEvent(new VideoSearchedEvent(keyword, videoDbIds));
+        }
 
         return videos.stream()
                 .map(YoutubeConverter::toVideoCard)
@@ -68,14 +72,20 @@ public class YoutubeSearchService {
     }
 
     // 유튜브 검색 api 호출
-    private List<String> searchVideoIds(String keyword) {
+    private List<String> searchVideoIds(String keyword, String sort) {
         try {
             YouTube.Search.List searchRequest = youtubeClient.search().list(List.of("snippet"));
             searchRequest.setKey(apiKey);
             searchRequest.setQ(keyword);
             searchRequest.setType(List.of("video"));
             searchRequest.setMaxResults(20L);
-            searchRequest.setRelevanceLanguage("ko");
+            searchRequest.setOrder(resolveOrder(sort));
+
+            // EU 같은 비한국어 키워드 검색 품질 저하를 막기 위해 2글자 초과일 때만 한국어 선호를 건다.
+            String trimmedKeyword = keyword == null ? "" : keyword.trim();
+            if (trimmedKeyword.length() > 2) {
+                searchRequest.setRelevanceLanguage("ko");
+            }
 
             SearchListResponse response = searchRequest.execute();
             return response.getItems().stream()
@@ -85,6 +95,16 @@ public class YoutubeSearchService {
         } catch (IOException e) {
             throw new YoutubeApiException(e.getMessage(), e);
         }
+    }
+
+    private String resolveOrder(String sort) {
+        if (sort == null || sort.isBlank()) {
+            return "relevance";
+        }
+        return switch (sort.trim().toLowerCase()) {
+            case "date", "recent", "latest" -> "date";
+            default -> "relevance";
+        };
     }
 
     // 국가별 비교용 검색 (번역된 키워드 + 지역/언어 + 날짜 범위)
@@ -97,6 +117,29 @@ public class YoutubeSearchService {
             LocalDate endDate) {
 
         List<String> videoIds = searchVideoIdsByRegion(keyword, regionCode, relevanceLanguage, startDate, endDate);
+        if (videoIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<YoutubeVideo> videos = fetchAndSaveVideos(videoIds);
+        translateTitlesIfNeeded(videos);
+        linkKeywordToVideos(keyword, videos);
+
+        return videos.stream()
+                .map(YoutubeConverter::toVideoCard)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public List<YoutubeVideoDto.VideoCard> searchByRegion(
+            String keyword,
+            String regionCode,
+            String relevanceLanguage,
+            LocalDateTime publishedAfter,
+            int maxResults) {
+
+        int boundedMaxResults = Math.max(1, Math.min(maxResults, 20));
+        List<String> videoIds = searchVideoIdsByRegion(keyword, regionCode, relevanceLanguage, publishedAfter, boundedMaxResults);
         if (videoIds.isEmpty()) {
             return List.of();
         }
@@ -132,6 +175,35 @@ public class YoutubeSearchService {
             if (endDate != null) {
                 searchRequest.setPublishedBefore(
                         endDate.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC).toString());
+            }
+
+            SearchListResponse response = searchRequest.execute();
+            return response.getItems().stream()
+                    .map(item -> item.getId().getVideoId())
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            throw new YoutubeApiException(e.getMessage(), e);
+        }
+    }
+
+    private List<String> searchVideoIdsByRegion(
+            String keyword,
+            String regionCode,
+            String relevanceLanguage,
+            LocalDateTime publishedAfter,
+            int maxResults) {
+        try {
+            YouTube.Search.List searchRequest = youtubeClient.search().list(List.of("snippet"));
+            searchRequest.setKey(apiKey);
+            searchRequest.setQ(keyword);
+            searchRequest.setType(List.of("video"));
+            searchRequest.setMaxResults((long) maxResults);
+            searchRequest.setRegionCode(regionCode);
+            searchRequest.setRelevanceLanguage(relevanceLanguage);
+
+            if (publishedAfter != null) {
+                searchRequest.setPublishedAfter(publishedAfter.toInstant(ZoneOffset.UTC).toString());
             }
 
             SearchListResponse response = searchRequest.execute();
@@ -197,7 +269,7 @@ public class YoutubeSearchService {
         String videoId = video.getId();
         YoutubeVideo saved = youtubeVideoRepository.findByYoutubeVideoId(videoId)
                 .orElseGet(() -> youtubeVideoRepository.save(YoutubeConverter.toYoutubeVideoEntity(video)));
-        videoGraphSyncService.syncVideo(saved);
+        videoGraphSyncService.syncVideoNow(saved);
         return saved;
     }
 

@@ -61,7 +61,7 @@ class BiasAnalysisResultServiceTest {
         when(mockResult.getTargetId()).thenReturn(1L);
         when(mockResult.getAnalysisJob()).thenReturn(mockJob);
 
-        when(biasAnalysisResultRepository.findByTargetIdAndTargetType(1L, TargetType.YOUTUBE_VIDEO))
+        when(biasAnalysisResultRepository.findTopByTargetIdAndTargetTypeOrderByCreatedAtDesc(1L, TargetType.YOUTUBE_VIDEO))
                 .thenReturn(Optional.of(mockResult));
         when(biasAnalysisKeywordRepository.findAllByBiasAnalysisResultId(1L)).thenReturn(List.of());
         when(biasEvidenceRepository.findAllByBiasAnalysisResultId(1L)).thenReturn(List.of());
@@ -83,7 +83,7 @@ class BiasAnalysisResultServiceTest {
     @Test
     void getAnalysisResult_throwsAnalysisException_whenNotFound() {
         // given
-        when(biasAnalysisResultRepository.findByTargetIdAndTargetType(99L, TargetType.YOUTUBE_VIDEO))
+        when(biasAnalysisResultRepository.findTopByTargetIdAndTargetTypeOrderByCreatedAtDesc(99L, TargetType.YOUTUBE_VIDEO))
                 .thenReturn(Optional.empty());
 
         // when & then

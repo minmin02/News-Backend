@@ -1,6 +1,7 @@
 package com.example.news.domain.issue.entity;
 
 import com.example.news.domain.issue.enums.ClusterStatus;
+import com.example.news.domain.issue.enums.IssueClusterType;
 import com.example.news.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -43,4 +44,8 @@ public class IssueCluster extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ClusterStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private IssueClusterType clusterType;
 }

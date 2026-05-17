@@ -6,6 +6,10 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum ClusterStatus {
+    DRAFT("draft"),
+    LOCKED("locked"),
+    ANALYZING("analyzing"),
+    READY_FOR_REPORT("ready_for_report"),
     PENDING("pending"),
     PROCESSING("processing"),
     COMPLETED("completed"),

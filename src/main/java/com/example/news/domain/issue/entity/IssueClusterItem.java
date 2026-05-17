@@ -1,5 +1,6 @@
 package com.example.news.domain.issue.entity;
 
+import com.example.news.domain.issue.enums.IssueClusterItemSourceType;
 import com.example.news.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -49,4 +50,8 @@ public class IssueClusterItem extends BaseEntity {
     private Boolean isRepresentative;
 
     private Integer rankNo;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private IssueClusterItemSourceType sourceType;
 }

@@ -6,6 +6,8 @@ import com.example.news.domain.content.repository.YoutubeVideoRepository;
 import com.example.news.domain.issue.entity.IssueCluster;
 import com.example.news.domain.issue.entity.IssueClusterItem;
 import com.example.news.domain.issue.enums.ClusterStatus;
+import com.example.news.domain.issue.enums.IssueClusterItemSourceType;
+import com.example.news.domain.issue.enums.IssueClusterType;
 import com.example.news.domain.issue.repository.IssueClusterItemRepository;
 import com.example.news.domain.issue.repository.IssueClusterRepository;
 import com.example.news.global.event.VideoSearchedEvent;
@@ -44,6 +46,7 @@ public class SearchAnalysisTriggerService {
                         .periodStartDate(today)
                         .periodEndDate(today)
                         .status(ClusterStatus.PENDING)
+                        .clusterType(IssueClusterType.SEARCH_AUTO)
                         .build()
         );
 
@@ -56,6 +59,7 @@ public class SearchAnalysisTriggerService {
                             .youtubeVideoId(video.getId())
                             .countryCode(countryCode)
                             .isRepresentative(false)
+                            .sourceType(IssueClusterItemSourceType.AUTO)
                             .build()
             );
             analysisService.triggerAnalysisAsync(video.getId());

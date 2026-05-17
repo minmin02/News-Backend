@@ -3,6 +3,7 @@ package com.example.news.domain.issue.controller;
 import com.example.news.domain.issue.dto.*;
 import com.example.news.domain.issue.service.IssueService;
 import com.example.news.global.response.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,8 +20,9 @@ public class IssueController {
     public ResponseEntity<ApiResponse<IssueSearchResponseDto>> search(
             @RequestParam String searchKeyword, // 파라미터로 한국어 키워드
             @RequestParam String countries, // 파라미터로 나라 (쉼표로 구분함) (ex, KR, JP, US)
-            @RequestParam(defaultValue = "30") int days) { // 파라미터로 기한 일수 (default 30일)
-        return ResponseEntity.ok(ApiResponse.ok(issueService.search(searchKeyword, countries, days)));
+            @RequestParam(defaultValue = "30") int days,
+            @RequestParam(defaultValue = "false") boolean autoCluster) { // 기본은 검색 전용 모드
+        return ResponseEntity.ok(ApiResponse.ok(issueService.search(searchKeyword, countries, days, autoCluster)));
     }
 
     // 국가별 대표 영상 비교 결과 조회 (저장된 비교 결과 조회)
@@ -37,6 +39,45 @@ public class IssueController {
     public ResponseEntity<ApiResponse<OpposingVideoResponseDto>> opposing(
             @RequestParam Long videoId) {
         return ResponseEntity.ok(ApiResponse.ok(issueService.findOpposingVideo(videoId)));
+    }
+
+    @PostMapping("/curation/sets")
+    public ResponseEntity<ApiResponse<CurationDto.CurationSetResponse>> createCurationSet(
+            @Valid @RequestBody CurationDto.CreateSetRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(issueService.createCurationSet(request)));
+    }
+
+    @PostMapping("/curation/sets/{issueClusterId}/items")
+    public ResponseEntity<ApiResponse<CurationDto.CurationItemResponse>> addCurationItem(
+            @PathVariable Long issueClusterId,
+            @Valid @RequestBody CurationDto.AddItemRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(issueService.addCurationItem(issueClusterId, request)));
+    }
+
+    @DeleteMapping("/curation/sets/{issueClusterId}/items/{issueClusterItemId}")
+    public ResponseEntity<ApiResponse<String>> removeCurationItem(
+            @PathVariable Long issueClusterId,
+            @PathVariable Long issueClusterItemId) {
+        issueService.removeCurationItem(issueClusterId, issueClusterItemId);
+        return ResponseEntity.ok(ApiResponse.ok("deleted"));
+    }
+
+    @PostMapping("/curation/sets/{issueClusterId}/lock")
+    public ResponseEntity<ApiResponse<CurationDto.CurationStatusResponse>> lockCurationSet(
+            @PathVariable Long issueClusterId) {
+        return ResponseEntity.ok(ApiResponse.ok(issueService.lockCurationSet(issueClusterId)));
+    }
+
+    @GetMapping("/curation/sets/{issueClusterId}/status")
+    public ResponseEntity<ApiResponse<CurationDto.CurationStatusResponse>> curationStatus(
+            @PathVariable Long issueClusterId) {
+        return ResponseEntity.ok(ApiResponse.ok(issueService.getCurationStatus(issueClusterId)));
+    }
+
+    @GetMapping("/comparison/report")
+    public ResponseEntity<ApiResponse<IssueComparisonReportResponseDto>> comparisonReport(
+            @RequestParam Long issueClusterId) {
+        return ResponseEntity.ok(ApiResponse.ok(issueService.comparisonReport(issueClusterId)));
     }
 
 }

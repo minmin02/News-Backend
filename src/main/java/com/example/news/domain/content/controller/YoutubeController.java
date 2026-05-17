@@ -25,8 +25,9 @@ public class YoutubeController {
     // 키워드 검색
     @GetMapping("/search")
     public ApiResponse<List<YoutubeVideoDto.VideoCard>> search(
-            @RequestParam String keyword) {
-        List<YoutubeVideoDto.VideoCard> result = youtubeSearchService.search(keyword);
+            @RequestParam String keyword,
+            @RequestParam(required = false, defaultValue = "relevance") String sort) {
+        List<YoutubeVideoDto.VideoCard> result = youtubeSearchService.search(keyword, sort);
         return ApiResponse.ok(result);
     }
 
@@ -42,7 +43,7 @@ public class YoutubeController {
     public ApiResponse<List<YoutubeVideoDto.VideoCard>> getRecommendations(
             @RequestParam(required = false) String keyword) {
         List<YoutubeVideoDto.VideoCard> result = keyword != null
-                ? youtubeSearchService.search(keyword)
+                ? youtubeSearchService.search(keyword, "relevance")
                 : List.of();
         return ApiResponse.ok(result);
     }

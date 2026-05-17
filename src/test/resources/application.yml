@@ -18,6 +18,18 @@ youtube:
     key: test-key
   featured-channel-ids: "UCtest"
 
+kakao:
+  client-id: test-kakao-client-id
+  client-secret: test-kakao-client-secret
+  redirect-uri: http://localhost/test/kakao/callback
+
+google:
+  client-id: test-google-client-id
+  client-secret: test-google-client-secret
+  redirect-uri: http://localhost/test/google/callback
+  translate:
+    api-key: test-google-translate-api-key
+
 ai-pipeline:
   base-url: http://localhost:8000
 

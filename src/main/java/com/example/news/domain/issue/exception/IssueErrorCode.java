@@ -14,7 +14,10 @@ public enum IssueErrorCode implements ResponseCode {
     ISSUE_CLUSTER_NOT_FOUND("IS004", "issue cluster not found"),
     COMPARISON_RESULT_NOT_FOUND("IS005", "comparison result not found"),
     ANALYSIS_NOT_COMPLETED("IS006", "analysis not completed for this video"),
-    OPPOSING_VIDEO_NOT_FOUND("IS007", "no opposing video found in the same cluster");
+    OPPOSING_VIDEO_NOT_FOUND("IS007", "no opposing video found in the same cluster"),
+    INVALID_CLUSTER_STATUS("IS008", "invalid issue cluster status transition"),
+    CURATION_ITEM_DUPLICATE("IS009", "curation item already exists in set"),
+    INVALID_COUNTRY_SCOPE("IS010", "curation country must be one of KR, US, CN");
 
     private final String statusCode;
     private final String message;

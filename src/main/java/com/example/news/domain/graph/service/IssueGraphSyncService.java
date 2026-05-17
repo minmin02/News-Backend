@@ -11,8 +11,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -27,16 +30,22 @@ public class IssueGraphSyncService {
     public void syncIssue(IssueCluster cluster,
                           List<IssueClusterItem> clusterItems,
                           Map<Long, YoutubeVideo> videoMap) {
+        syncIssueNow(cluster, clusterItems, videoMap);
+    }
+
+    public void syncIssueNow(IssueCluster cluster,
+                             List<IssueClusterItem> clusterItems,
+                             Map<Long, YoutubeVideo> videoMap) {
         try {
             // Issue 노드 upsert — keyword, name 둘 다 저장 (Python이 둘 다 참조)
-            IssueNode issueNode = issueNodeRepository.findById(cluster.getId())
+            IssueNode issueNode = issueNodeRepository.findNodeOnlyByIssueId(cluster.getId())
                     .orElseGet(() -> IssueNode.builder()
                             .clusterId(cluster.getId())
-                            .searchKeyword(cluster.getSearchKeyword())
-                            .name(cluster.getSearchKeyword())
-                            .periodStartDate(cluster.getPeriodStartDate())
-                            .periodEndDate(cluster.getPeriodEndDate())
                             .build());
+            issueNode.setSearchKeyword(cluster.getSearchKeyword());
+            issueNode.setName(cluster.getSearchKeyword());
+            issueNode.setPeriodStartDate(cluster.getPeriodStartDate());
+            issueNode.setPeriodEndDate(cluster.getPeriodEndDate());
             issueNodeRepository.save(issueNode);
 
             // 각 영상 VideoNode에 PART_OF 관계 연결 (addIssue 내부에서 중복 방지)
@@ -44,15 +53,48 @@ public class IssueGraphSyncService {
                 YoutubeVideo video = videoMap.get(item.getYoutubeVideoId());
                 if (video == null) continue;
 
-                videoNodeRepository.findById(video.getYoutubeVideoId()).ifPresent(videoNode -> {
+                videoNodeRepository.findNodeOnlyByVideoId(video.getYoutubeVideoId()).ifPresent(videoNode -> {
                     videoNode.addIssue(issueNode);
                     videoNodeRepository.save(videoNode);
                 });
             }
 
+            Set<String> countryDistribution = clusterItems.stream()
+                    .map(IssueClusterItem::getCountryCode)
+                    .filter(code -> code != null && !code.isBlank())
+                    .collect(Collectors.toSet());
+            if (countryDistribution.size() < 2) {
+                logPipelineFailure(
+                        "issue",
+                        null,
+                        null,
+                        cluster.getId(),
+                        "single-country issue distribution: " + countryDistribution,
+                        false
+                );
+            }
+
         } catch (Exception e) {
-            log.warn("[GraphSync] Issue 동기화 실패 - clusterId={}, error={}",
-                    cluster.getId(), e.getMessage());
+            logPipelineFailure("issue", null, null, cluster.getId(), e.getMessage(), true);
+            log.warn("[GraphSync] Issue 동기화 예외", e);
         }
+    }
+
+    private void logPipelineFailure(String pipeline,
+                                    String videoId,
+                                    Long targetId,
+                                    Long issueId,
+                                    String reason,
+                                    boolean hasStackTrace) {
+        log.warn(
+                "pipeline={} video_id={} target_id={} issue_id={} reason=\"{}\" stacktrace={} event_time={}",
+                pipeline,
+                videoId,
+                targetId,
+                issueId,
+                reason,
+                hasStackTrace,
+                OffsetDateTime.now()
+        );
     }
 }
